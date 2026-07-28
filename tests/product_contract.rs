@@ -430,6 +430,7 @@ fn singular_collections_and_kind_specific_packs_are_the_only_documented_model() 
         "docs/community-plugins.md",
         "shared/gurumaker/references/workspace-contract.md",
         "shared/gurumaker/references/record-contract.md",
+        ".github/workflows/ci.yml",
     ]
     .map(normalized)
     .join(" ");

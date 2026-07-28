@@ -120,7 +120,7 @@ jobs:
               "tool_input": {
                 "file_path": os.path.join(
                   os.environ["HOOK_WORKSPACE"],
-                  ".guru-maker/plugins/acme--pack/lens.md"
+                  ".guru-maker/packs/lens/element.md"
                 )
               }
             }))'
@@ -192,7 +192,7 @@ jobs:
             tool_name = "Write"
             tool_input = @{
               file_path = Join-Path $hookWorkspace `
-                ".guru-maker/plugins/acme--pack/lens.md"
+                ".guru-maker/packs/lens/element.md"
             }
           } | ConvertTo-Json -Compress -Depth 4
           $startInfo = [Diagnostics.ProcessStartInfo]::new()
