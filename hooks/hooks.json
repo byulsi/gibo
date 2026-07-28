@@ -1,0 +1,33 @@
+{
+  "description": "Minimal Guru Maker memory guardrails for native file edits.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-tool-use",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\run-hook.ps1\" pre-tool-use",
+            "timeout": 60,
+            "statusMessage": "Protecting installed Guru Packs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" post-tool-use",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\run-hook.ps1\" post-tool-use",
+            "timeout": 60,
+            "statusMessage": "Validating Guru Maker memory"
+          }
+        ]
+      }
+    ]
+  }
+}

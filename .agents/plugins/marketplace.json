@@ -1,0 +1,16 @@
+{
+  "name": "monarchjuno",
+  "interface": {
+    "displayName": "Agents & Cents"
+  },
+  "plugins": [
+    {
+      "name": "guru-maker",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

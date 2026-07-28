@@ -1,0 +1,34 @@
+# Rust
+/target/
+
+# Generated artifacts and coverage
+/dist/
+/coverage/
+*.profraw
+*.profdata
+*.log
+
+# Local environments and secrets
+/.cargo/
+/.venv/
+*.egg-info/
+/tmp/
+.env
+.env.*
+!.env.example
+
+# Incidental maintainer caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

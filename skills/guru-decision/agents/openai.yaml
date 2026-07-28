@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guru Decision"
+  short_description: "Record decisions, reviews, and graphs"
+  default_prompt: "Use $guru-decision to synthesize and record this investment decision."

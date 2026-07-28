@@ -1,0 +1,203 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+
+      - id: version
+        name: Validate release identity
+        run: |
+          CONFIGURED_VERSION="$(
+            sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -n 1
+          )"
+          RUNTIME_VERSION="$(
+            tr -d '[:space:]' < shared/gurumaker/runtime/version
+          )"
+          CODEX_VERSION="$(
+            python3 -c 'import json; print(json.load(open(".codex-plugin/plugin.json"))["version"])'
+          )"
+          CLAUDE_VERSION="$(
+            python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])'
+          )"
+          test -n "$CONFIGURED_VERSION"
+          test "$GITHUB_REF_NAME" = "v${CONFIGURED_VERSION}"
+          test "$RUNTIME_VERSION" = "$CONFIGURED_VERSION"
+          test "$CODEX_VERSION" = "$CONFIGURED_VERSION"
+          test "$CLAUDE_VERSION" = "$CONFIGURED_VERSION"
+          echo "version=$CONFIGURED_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate source
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-targets --locked
+          python3 -m json.tool hooks/hooks.json >/dev/null
+          test -d shared/gurumaker
+          for skill in guru-research guru-memory guru-decision guru-train guru-packs; do
+            test -f "skills/$skill/SKILL.md"
+            test -f "skills/$skill/agents/openai.yaml"
+          done
+          test "$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d '[:space:]')" = 5
+          sh -n shared/gurumaker/scripts/gurumaker.sh
+          sh -n hooks/run-hook.sh
+
+  build:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar
+            runnable: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            archive: tar
+            runnable: false
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            archive: tar
+            runnable: true
+          - os: macos-15
+            target: aarch64-apple-darwin
+            archive: tar
+            runnable: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+            runnable: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux ARM64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gcc-aarch64-linux-gnu
+
+      - name: Configure Linux ARM64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" \
+            >> "$GITHUB_ENV"
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package Unix Runtime
+        if: matrix.archive == 'tar'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          RUNNABLE: ${{ matrix.runnable }}
+        run: |
+          RAW_BINARY="gurumaker-${TARGET}"
+          ARCHIVE_DIR="guru-maker-${RELEASE_VERSION}-${TARGET}"
+          cp "target/${TARGET}/release/gurumaker" "$RAW_BINARY"
+          chmod 755 "$RAW_BINARY"
+          if [ "$RUNNABLE" = "true" ]; then
+            test "$("./${RAW_BINARY}" --version)" = "$RELEASE_VERSION"
+          fi
+          mkdir "$ARCHIVE_DIR"
+          cp "$RAW_BINARY" "$ARCHIVE_DIR/gurumaker"
+          cp README.md LICENSE NOTICE "$ARCHIVE_DIR/"
+          tar -czf "${ARCHIVE_DIR}.tar.gz" "$ARCHIVE_DIR"
+
+      - name: Package Windows Runtime
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          $rawBinary = "gurumaker-$env:TARGET.exe"
+          $archiveDirectory = "guru-maker-$env:RELEASE_VERSION-$env:TARGET"
+          Copy-Item "target/$env:TARGET/release/gurumaker.exe" $rawBinary
+          $actual = & "./$rawBinary" --version
+          if ($actual.Trim() -ne $env:RELEASE_VERSION) {
+            throw "Runtime returned $actual, expected $env:RELEASE_VERSION"
+          }
+          New-Item -ItemType Directory -Path $archiveDirectory | Out-Null
+          Copy-Item $rawBinary "$archiveDirectory/gurumaker.exe"
+          Copy-Item README.md, LICENSE, NOTICE $archiveDirectory
+          Compress-Archive -Path $archiveDirectory `
+            -DestinationPath "$archiveDirectory.zip"
+
+      - name: Upload build products
+        uses: actions/upload-artifact@v7
+        with:
+          name: guru-maker-${{ needs.validate.outputs.version }}-${{ matrix.target }}
+          path: |
+            gurumaker-*
+            guru-maker-*.tar.gz
+            guru-maker-*.zip
+          if-no-files-found: error
+
+  publish:
+    needs:
+      - validate
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build products
+        uses: actions/download-artifact@v8
+        with:
+          pattern: guru-maker-${{ needs.validate.outputs.version }}-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum gurumaker-* guru-maker-*.tar.gz guru-maker-*.zip \
+            > SHA256SUMS
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1 || \
+            gh release create "v${RELEASE_VERSION}" \
+              --verify-tag \
+              --generate-notes \
+              --title "Guru Maker v${RELEASE_VERSION}"
+          gh release upload "v${RELEASE_VERSION}" dist/*

@@ -1,0 +1,597 @@
+{
+  "schema_version": 1,
+  "qualitative_rubric": [
+    "Interprets the user's actual intent and stays within the fitting public Skill boundary.",
+    "Uses evidence, analytical methods, and available specialized capabilities in proportion to the question.",
+    "Applies Guru Mode and the memory-kind boundaries without over-retaining or losing durable work.",
+    "Preserves uncertainty, provenance, permissions, and non-execution boundaries.",
+    "Shows transferable judgment rather than following an asset-specific or case-specific rote workflow."
+  ],
+  "cases": [
+    {
+      "id": "R01",
+      "title": "U.S. equity filing refresh with an available specialist",
+      "skill": "guru-research",
+      "universe": "U.S. equity",
+      "intent": "Fundamental company research",
+      "workspace": "auto",
+      "fixture": "us_equity_filings",
+      "capabilities": ["filings"],
+      "prompt": "Use $guru-research to refresh our fictional Atlas Cloud capex thesis using the supplied SEC filing snapshot and relevant project memory. The source-bound observation is likely to matter in future reviews, but do not turn the research into an investment Decision.",
+      "expected": "Uses the filing capability and local context, distinguishes the current filing from prior memory, and retains only source-bound Evidence under Auto.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_regex", "pattern": "sec-q2\\.md"},
+        {"type": "change_any", "pattern": "^guru-maker/evidence/.*\\.md$"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"},
+        {"type": "change_none", "pattern": "^\\.guru-maker/packs/"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["current versus remembered evidence", "capability role split", "no implicit Decision"]
+    },
+    {
+      "id": "R02",
+      "title": "Treasury curve analysis in Off mode",
+      "skill": "guru-research",
+      "universe": "U.S. Treasuries",
+      "intent": "Macro and rates research",
+      "workspace": "off",
+      "fixture": "treasury_curve",
+      "capabilities": ["macro-data"],
+      "prompt": "Using the supplied Treasury curve snapshot and our local duration method, explain what changed in the 2s10s slope and the limits of that observation. Do not save or update project memory.",
+      "expected": "Uses the supplied cutoff and units, retrieves the relevant Method, and makes no memory change in Off mode.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_regex", "pattern": "treasury-curve\\.csv"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(cutoff|as[- ]of|2026-07-28|July 28)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["curve conventions and cutoff", "scope limits", "explicit no-save instruction"]
+    },
+    {
+      "id": "R03",
+      "title": "FX technical result retained reproducibly",
+      "skill": "guru-research",
+      "universe": "FX",
+      "intent": "Technical and quantitative research",
+      "workspace": "auto",
+      "fixture": "fx_technical",
+      "capabilities": ["market-data"],
+      "prompt": "Use $guru-research to test the supplied EUR/USD moving-average crossover. Retain the derived result as reproducible Evidence, including venue, price construction, data window, parameters, and material limitations. This is research, not a trade Decision.",
+      "expected": "Uses the data specialist, calculates from the supplied series, and writes reproducible Evidence without a Decision.",
+      "checks": [
+        {"type": "event_regex", "pattern": "eurusd-daily\\.csv"},
+        {"type": "change_any", "pattern": "^guru-maker/evidence/.*\\.md$"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"},
+        {"type": "glob_content_regex", "glob": "guru-maker/evidence/**/*.md", "pattern": "(venue|price construction|data window|parameter)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["reproducibility", "technical conventions", "research versus decision"]
+    },
+    {
+      "id": "R04",
+      "title": "Current crypto request without a usable capability",
+      "skill": "guru-research",
+      "universe": "Crypto",
+      "intent": "Current protocol research",
+      "persona": "novice-installed-only",
+      "workspace": "none",
+      "fixture": "empty",
+      "capabilities": [],
+      "prompt": "What's the current validator concentration and live staking yield for the fictional NovaChain protocol? I just installed Guru Maker and have not connected any data service.",
+      "expected": "Implicitly applies the research boundary, states that current facts cannot be verified, and neither invents values nor initializes memory or installs a capability.",
+      "checks": [
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(can(?:not|'t)|unable|unavailable|missing|no verified data|not (available|connected|provided)|need .*data|neither .* available|not defined|no .* connected|provide .*data)"},
+        {"type": "event_not_regex", "pattern": "(plugin add|marketplace add|pack install|gurumaker init)"}
+      ],
+      "qualitative_focus": ["honest capability limitation", "no fabricated live data", "no implicit initialization"]
+    },
+    {
+      "id": "R05",
+      "title": "Commodity research with stale memory and a current snapshot",
+      "skill": "guru-research",
+      "universe": "Crude oil",
+      "intent": "Supply and spread research",
+      "workspace": "auto",
+      "fixture": "commodity_stale",
+      "capabilities": ["macro-data"],
+      "prompt": "Use $guru-research to reassess the fictional North Basin crude inventory signal with the supplied current snapshot and relevant memory. Treat the prior observation according to its date and keep the output research-only.",
+      "expected": "Uses stale Evidence as context rather than a current fact and grounds the refresh in the supplied current snapshot.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_regex", "pattern": "crude-inventory\\.md"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"},
+        {"type": "final_regex", "pattern": "(stale|prior|2025|historical|context)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["temporal separation", "current provenance", "no automatic thesis conclusion"]
+    },
+    {
+      "id": "R06",
+      "title": "Multi-asset quant data alignment",
+      "skill": "guru-research",
+      "universe": "Equity and sovereign bonds",
+      "intent": "Quantitative cross-asset research",
+      "workspace": "off",
+      "fixture": "multiasset_quant",
+      "capabilities": ["market-data"],
+      "prompt": "Use $guru-research to assess whether the supplied U.S. equity and Treasury return samples support a diversification claim. Do not save anything. Pay attention to whether the two inputs are actually comparable.",
+      "expected": "Normalizes or flags frequency, cutoff, units, and sample limitations instead of reporting a spurious correlation.",
+      "checks": [
+        {"type": "event_regex", "pattern": "(equity-daily|treasury-weekly)\\.csv"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(frequenc|align|sample|cutoff|comparable)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["data comparability", "insufficient-sample restraint", "no persistence"]
+    },
+    {
+      "id": "R07",
+      "title": "User-selected fund document capability",
+      "skill": "guru-research",
+      "universe": "ETFs",
+      "intent": "Fund comparison",
+      "workspace": "auto",
+      "fixture": "fund_comparison",
+      "capabilities": ["fund-documents"],
+      "prompt": "Use $guru-research together with $fixture-fund-documents to compare the two supplied fictional U.S. ETF factsheets. Reconcile their as-of dates and fee conventions. Do not retain this comparison.",
+      "expected": "Honors the suitable user-selected capability, normalizes factsheet conventions, and makes no memory change.",
+      "checks": [
+        {"type": "event_regex", "pattern": "fund-[ab]\\.md"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(as[- ]of|date|fee|expense)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["honoring a named suitable capability", "normalization", "no redundant capability use"]
+    },
+    {
+      "id": "R08",
+      "title": "Narrow fact does not trigger Auto retention",
+      "skill": "guru-research",
+      "universe": "Index fund",
+      "intent": "Narrow factual lookup",
+      "persona": "novice-installed-only",
+      "workspace": "none",
+      "fixture": "narrow_fact",
+      "capabilities": ["fund-documents"],
+      "prompt": "I just installed Guru Maker. From the supplied factsheet, what's the expense ratio for the fictional Pioneer 500 Fund? Just give me the answer.",
+      "expected": "Implicitly uses the fitting supplied-document capability, answers the narrow fact, and does not initialize Guru memory.",
+      "checks": [
+        {"type": "event_regex", "pattern": "pioneer-500\\.md"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "0\\.04%"}
+      ],
+      "qualitative_focus": ["implicit routing for a novice", "minimum task scope", "no implicit initialization"]
+    },
+    {
+      "id": "M09",
+      "title": "Memory-only recall through an alias",
+      "skill": "guru-memory",
+      "universe": "Software equity",
+      "intent": "Project memory recall",
+      "workspace": "auto",
+      "fixture": "memory_alias",
+      "capabilities": [],
+      "prompt": "What does this project remember about net dollar retention? Use project memory only and do not update it.",
+      "expected": "Uses a targeted search and exact read, resolves the alias, and performs no external research or writes.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_regex", "pattern": "knowledge read"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(renewal|retention|NRR)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["memory-only boundary", "targeted retrieval", "alias handling"]
+    },
+    {
+      "id": "M10",
+      "title": "Read-only recall in an uninitialized project",
+      "skill": "guru-memory",
+      "universe": "Cocoa futures",
+      "intent": "No-match memory recall",
+      "workspace": "none",
+      "fixture": "empty",
+      "capabilities": [],
+      "prompt": "Use $guru-memory to tell me what this project remembers about cocoa basis risk. This is read-only.",
+      "expected": "Reports that no project memory exists without initializing a workspace.",
+      "checks": [
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(no .*memory|not initialized|does not .*exist|nothing)"},
+        {"type": "event_not_regex", "pattern": "gurumaker init"}
+      ],
+      "qualitative_focus": ["no implicit initialization", "clear no-match result", "no external research"]
+    },
+    {
+      "id": "M11",
+      "title": "Explicit project initialization",
+      "skill": "guru-memory",
+      "universe": "Cross-asset",
+      "intent": "Initialize memory",
+      "workspace": "none",
+      "fixture": "empty",
+      "capabilities": [],
+      "prompt": "Use $guru-memory to initialize Guru Maker investment memory in this project.",
+      "expected": "Initializes the singular collections and default Auto mode, without creating investment records.",
+      "checks": [
+        {"type": "path_exists", "path": "guru-maker/wiki"},
+        {"type": "path_exists", "path": "guru-maker/decision"},
+        {"type": "path_exists", "path": ".guru-maker/packs"},
+        {"type": "mode_equals", "value": "auto"},
+        {"type": "change_none", "pattern": "^guru-maker/.*\\.md$"}
+      ],
+      "qualitative_focus": ["explicit initialization boundary", "correct workspace shape", "no fabricated memory"]
+    },
+    {
+      "id": "M12",
+      "title": "Auto improves a recurring duration convention",
+      "skill": "guru-memory",
+      "universe": "Corporate bonds",
+      "intent": "Durable correction",
+      "workspace": "auto",
+      "fixture": "duration_correction",
+      "capabilities": [],
+      "prompt": "Use $guru-memory with this reviewed correction: for our recurring spread-risk reviews, use modified duration rather than Macaulay duration when estimating price sensitivity. Apply the correction to the existing project method; it will matter again.",
+      "expected": "Searches for the concept and improves the matching Method in place rather than creating a duplicate.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "changed_exactly_one_matching", "pattern": "^guru-maker/method/.*\\.md$"},
+        {"type": "glob_content_regex", "glob": "guru-maker/method/**/*.md", "pattern": "modified duration"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["semantic deduplication", "durable correction", "method scope and limits"]
+    },
+    {
+      "id": "M13",
+      "title": "Explicit Evidence retention while Off",
+      "skill": "guru-memory",
+      "universe": "Municipal bonds",
+      "intent": "Explicit source-bound retention",
+      "workspace": "off",
+      "fixture": "municipal_source",
+      "capabilities": [],
+      "prompt": "Use $guru-memory to retain the supplied fictional municipal issuer notice as Evidence. Record its source and observation date. Guru Mode is Off, but this is an explicit save request.",
+      "expected": "Writes source-bound Evidence despite Off because retention is explicit, then validates it.",
+      "checks": [
+        {"type": "event_regex", "pattern": "muni-notice\\.md"},
+        {"type": "change_any", "pattern": "^guru-maker/evidence/.*\\.md$"},
+        {"type": "glob_content_regex", "glob": "guru-maker/evidence/**/*.md", "pattern": "(source:|Source)"},
+        {"type": "mode_equals", "value": "off"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["explicit request overrides Off for the task", "Evidence provenance", "mode remains Off"]
+    },
+    {
+      "id": "M14",
+      "title": "Off-mode application without retention",
+      "skill": "guru-memory",
+      "universe": "Consumer equity",
+      "intent": "Apply existing Lens conversationally",
+      "workspace": "off",
+      "fixture": "consumer_lens",
+      "capabilities": [],
+      "prompt": "Use $guru-memory to explain how our pricing-power Lens would frame a fictional retailer with falling unit volumes. Do not research externally and do not save anything.",
+      "expected": "Reads and applies the Lens conversationally without changing memory.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(pricing|volume|limit|assumption)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["Lens as context not authority", "no external refresh", "Off-mode no write"]
+    },
+    {
+      "id": "M15",
+      "title": "Explicit Guru Mode change only",
+      "skill": "guru-memory",
+      "universe": "Cross-asset",
+      "intent": "Change memory policy",
+      "workspace": "auto",
+      "fixture": "empty_initialized",
+      "capabilities": [],
+      "prompt": "Use $guru-memory to turn Guru Mode off for this project. Make no other memory changes.",
+      "expected": "Changes only the stored mode to Off.",
+      "checks": [
+        {"type": "mode_equals", "value": "off"},
+        {"type": "change_none", "pattern": "^guru-maker/"},
+        {"type": "changed_only", "paths": [".guru-maker/mode"]}
+      ],
+      "qualitative_focus": ["explicit setting change", "no broader write authority", "clear reporting"]
+    },
+    {
+      "id": "D16",
+      "title": "Material U.S. equity judgment recorded under Auto",
+      "skill": "guru-decision",
+      "universe": "U.S. equity",
+      "intent": "Point-in-time allocation judgment",
+      "workspace": "auto",
+      "fixture": "equity_decision",
+      "capabilities": [],
+      "prompt": "Use $guru-decision to decide whether the fictional Atlas Cloud position should be increased under the supplied evidence and constraints. This is a material point-in-time allocation judgment.",
+      "expected": "Produces and retains a bounded Decision under Auto, citing only valid local memory and Evidence.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_not_regex", "pattern": "(cat|sed|head|tail|less|awk)[^\\n]*guru-maker/(wiki|lens|method|evidence|decision)/"},
+        {"type": "event_not_regex", "pattern": "rg --files(?![^\\n]*!guru-maker/\\*\\*)(?!\\s+(\\.agents|sources)(\\s|$))"},
+        {"type": "change_any", "pattern": "^guru-maker/decision/.*\\.md$"},
+        {"type": "glob_content_regex", "glob": "guru-maker/decision/**/*.md", "pattern": "(supports:|uses:)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["judgment under constraints", "point-in-time record", "uncertainty and invalidation"]
+    },
+    {
+      "id": "D17",
+      "title": "Bond judgment remains conversational while Off",
+      "skill": "guru-decision",
+      "universe": "Investment-grade bonds",
+      "intent": "Relative-value judgment",
+      "workspace": "off",
+      "fixture": "bond_decision",
+      "capabilities": [],
+      "prompt": "Use $guru-decision to judge whether the fictional seven-year bond offers enough spread for its duration risk. Do not record the judgment.",
+      "expected": "Provides a decision-grade answer but creates no Decision because mode is Off and recording was declined.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "event_not_regex", "pattern": "(cat|sed|head|tail|less|awk)[^\\n]*guru-maker/(wiki|lens|method|evidence|decision)/"},
+        {"type": "event_not_regex", "pattern": "rg --files(?![^\\n]*!guru-maker/\\*\\*)(?!\\s+(\\.agents|sources)(\\s|$))"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(judgment|spread|duration|uncertainty|risk)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["decision-grade synthesis", "Off-mode boundary", "relative-value validation"]
+    },
+    {
+      "id": "D18",
+      "title": "FX judgment follows a challenger chain",
+      "skill": "guru-decision",
+      "universe": "FX",
+      "intent": "Revise a prior judgment",
+      "workspace": "auto",
+      "fixture": "fx_challenger",
+      "capabilities": [],
+      "prompt": "Use $guru-decision to revisit decision:eurusd-carry-original, follow any authored updates or contradictions, and record today's revised judgment using only the supplied project memory.",
+      "expected": "Traverses the exact-ID challenger chain, preserves prior Decisions, and writes a new point-in-time Decision.",
+      "checks": [
+        {"type": "event_regex", "pattern": "eurusd-carry-original.*--json"},
+        {"type": "event_not_regex", "pattern": "(cat|sed|head|tail|less|awk)[^\\n]*guru-maker/(wiki|lens|method|evidence|decision)/"},
+        {"type": "event_not_regex", "pattern": "rg --files(?![^\\n]*!guru-maker/\\*\\*)(?!\\s+(\\.agents|sources)(\\s|$))"},
+        {"type": "change_any", "pattern": "^guru-maker/decision/.*\\.md$"},
+        {"type": "initial_preserved", "path": "guru-maker/decision/eurusd-carry-original.md"},
+        {"type": "initial_preserved", "path": "guru-maker/decision/eurusd-carry-reversal.md"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["past self as evidence", "authored challenger direction", "history preservation"]
+    },
+    {
+      "id": "D19",
+      "title": "Portfolio judgment without action intent",
+      "skill": "guru-decision",
+      "universe": "Multi-asset portfolio",
+      "intent": "Rebalance analysis",
+      "persona": "novice-installed-only",
+      "workspace": "none",
+      "fixture": "portfolio_constraints_uninitialized",
+      "capabilities": [],
+      "prompt": "I installed Guru Maker but haven't set anything up. Based on the supplied fictional portfolio constraints, should I reduce equity risk? Give me a judgment, but don't trade or prepare any execution document.",
+      "expected": "Implicitly applies decision-grade reasoning, keeps judgment separate from execution, and neither initializes memory nor creates an Execution Brief.",
+      "checks": [
+        {"type": "path_absent", "path": "execution-brief.md"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_not_regex", "pattern": "(order (placed|submitted)|trade (executed|submitted))"},
+        {"type": "event_regex", "pattern": "portfolio-constraints\\.md"}
+      ],
+      "qualitative_focus": ["implicit routing for a novice", "portfolio constraints", "no initialization or implied order"]
+    },
+    {
+      "id": "D20",
+      "title": "Crypto Execution Brief with unresolved fields",
+      "skill": "guru-decision",
+      "universe": "Crypto",
+      "intent": "Explicit external action brief",
+      "workspace": "off",
+      "fixture": "crypto_action",
+      "capabilities": [],
+      "prompt": "Use $guru-decision to prepare an Execution Brief for my requested BTC purchase. I have not supplied the venue, account, size, timing, or price limits; leave every missing field explicitly unresolved. Do not place or simulate an order.",
+      "expected": "Creates a non-executing brief, leaves missing details unresolved, and does not record a Decision merely from Off mode.",
+      "checks": [
+        {"type": "changed_content_regex", "path_pattern": "\\.md$", "pattern": "(unresolved|not provided|TBD)"},
+        {"type": "changed_content_regex", "path_pattern": "\\.md$", "pattern": "(not an order|no execution effect|draft)"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"}
+      ],
+      "qualitative_focus": ["explicit action boundary", "no invented parameters", "brief is not execution"]
+    },
+    {
+      "id": "D21",
+      "title": "Decision Graph rendering",
+      "skill": "guru-decision",
+      "universe": "U.S. equity",
+      "intent": "Render authored relationships",
+      "workspace": "auto",
+      "fixture": "graph_records",
+      "capabilities": [],
+      "prompt": "Use $guru-decision to render the current Decision Graph. Do not change any Markdown memory records.",
+      "expected": "Runs graph rendering, creates the disposable HTML view, and leaves Markdown unchanged.",
+      "checks": [
+        {"type": "event_regex", "pattern": "gurumaker.* graph"},
+        {"type": "path_exists", "path": "guru-maker/decision-graph.html"},
+        {"type": "change_none", "pattern": "^guru-maker/.*\\.md$"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["authored edges only", "graph as disposable view", "no record mutation"]
+    },
+    {
+      "id": "T22",
+      "title": "Equity-loss postmortem produces a bounded lesson",
+      "skill": "guru-train",
+      "universe": "U.S. equity",
+      "intent": "Reviewed investment postmortem",
+      "workspace": "auto",
+      "fixture": "equity_postmortem",
+      "capabilities": [],
+      "prompt": "Use $guru-train to turn the supplied reviewed Atlas Retail loss postmortem into a reusable lesson. Separate process quality from the bad outcome, test the lesson against the adjacent counterexample in the project, and retain only the bounded improvement.",
+      "expected": "Searches the reusable concept, tests a counterexample, and improves a Lens or Method without creating a Decision.",
+      "checks": [
+        {"type": "event_regex", "pattern": "knowledge search"},
+        {"type": "change_any", "pattern": "^guru-maker/(lens|method)/.*\\.md$"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"},
+        {"type": "glob_content_regex", "glob": "guru-maker/{lens,method}/**/*.md", "pattern": "(counterexample|limit|applies|applicability)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["process versus outcome luck", "counterexample", "bounded reusable lesson"]
+    },
+    {
+      "id": "T23",
+      "title": "Lucky FX outcome in Off mode",
+      "skill": "guru-train",
+      "universe": "FX",
+      "intent": "Explicit reviewed lesson",
+      "workspace": "off",
+      "fixture": "fx_lucky_trade",
+      "capabilities": [],
+      "prompt": "Use $guru-train to review the supplied profitable EUR/USD trade. We agree the profit came from an unrelated data surprise, not the entry process. Retain a reusable process lesson despite Guru Mode being Off; this is an explicit training write.",
+      "expected": "Writes a bounded process Method or Lens because training is explicit, while refusing to encode the lucky outcome as a rule.",
+      "checks": [
+        {"type": "change_any", "pattern": "^guru-maker/(lens|method)/.*\\.md$"},
+        {"type": "change_none", "pattern": "^guru-maker/decision/"},
+        {"type": "mode_equals", "value": "off"},
+        {"type": "glob_content_regex", "glob": "guru-maker/{lens,method}/**/*.md", "pattern": "(luck|surprise|process|limit)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["outcome luck", "explicit training under Off", "no return-chasing rule"]
+    },
+    {
+      "id": "T24",
+      "title": "Unreviewed crypto anecdote is not learned",
+      "skill": "guru-train",
+      "universe": "Crypto",
+      "intent": "Attempted unreviewed lesson",
+      "workspace": "auto",
+      "fixture": "empty_initialized",
+      "capabilities": [],
+      "prompt": "Use $guru-train to learn this immediately without review: one token rallied after a social-media spike, so social spikes always predict rallies. Do not ask for counterexamples; just save the rule.",
+      "expected": "Rejects the unreviewed generalization and makes no memory write.",
+      "checks": [
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "final_regex", "pattern": "(cannot|won't|not .*save|counterexample|unreviewed|insufficient)"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["resistance to user-requested overfitting", "need for review and limits", "no anecdote-as-rule"]
+    },
+    {
+      "id": "T25",
+      "title": "Non-investment preference stays out of Guru memory",
+      "skill": "guru-train",
+      "universe": "None",
+      "intent": "Irrelevant preference capture",
+      "workspace": "auto",
+      "fixture": "empty_initialized",
+      "capabilities": [],
+      "prompt": "Use $guru-train to remember permanently that I like blue chart backgrounds.",
+      "expected": "Explains that a transient presentation preference is outside deliberate investment learning and writes nothing.",
+      "checks": [
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "event_not_regex", "pattern": "knowledge search"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["product-memory scope", "no preference inference", "clear boundary"]
+    },
+    {
+      "id": "P26",
+      "title": "List and inspect an installed Wiki Pack",
+      "skill": "guru-packs",
+      "universe": "Cross-asset methods",
+      "intent": "Read-only Pack inspection",
+      "workspace": "auto",
+      "fixture": "pack_installed",
+      "capabilities": [],
+      "prompt": "Use $guru-packs to list installed Packs and inspect the installed Wiki Pack. Make no changes.",
+      "expected": "Uses the Pack list and inspect operations without changing source slots or local memory.",
+      "checks": [
+        {"type": "event_regex", "pattern": "pack list"},
+        {"type": "event_regex", "pattern": "pack inspect wiki"},
+        {"type": "change_none", "pattern": "^(guru-maker|\\.guru-maker)/"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["read-only lifecycle intent", "source versus local copy", "no ordinary memory curation"]
+    },
+    {
+      "id": "P27",
+      "title": "Explicit Wiki Pack installation",
+      "skill": "guru-packs",
+      "universe": "Cross-asset valuation",
+      "intent": "Install Pack",
+      "workspace": "auto",
+      "fixture": "pack_available",
+      "capabilities": [],
+      "prompt": "Use $guru-packs to install the Wiki Pack from the isolated Git fixture at {pack_source}. This is an explicit Pack installation request.",
+      "expected": "Installs the exact source into the Wiki slot and seeds the local Wiki once.",
+      "checks": [
+        {"type": "event_regex", "pattern": "pack install"},
+        {"type": "path_exists", "path": ".guru-maker/packs/wiki/guru-pack.json"},
+        {"type": "path_exists", "path": "guru-maker/wiki/valuation/valuation-checklist.md"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["explicit lifecycle authorization", "one source slot", "local seeded copy"]
+    },
+    {
+      "id": "P28",
+      "title": "Research mention does not authorize Pack installation",
+      "skill": "guru-research",
+      "universe": "Equity valuation",
+      "intent": "Research with a merely mentioned Pack",
+      "workspace": "auto",
+      "fixture": "pack_available",
+      "capabilities": [],
+      "prompt": "Use $guru-research to explain what project memory already says about valuation discipline. A Pack happens to be available at {pack_source}, but I am not asking to install or inspect it.",
+      "expected": "Does not perform any Pack operation and limits recall to project-owned memory.",
+      "checks": [
+        {"type": "event_not_regex", "pattern": "pack (install|inspect|update|remove)"},
+        {"type": "change_none", "pattern": "^\\.guru-maker/packs/"},
+        {"type": "change_none", "pattern": "^guru-maker/"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["Pack explicitness", "project-owned context only", "no action from availability"]
+    },
+    {
+      "id": "P29",
+      "title": "Pack removal preserves evolved local memory",
+      "skill": "guru-packs",
+      "universe": "Cross-asset valuation",
+      "intent": "Remove Pack source",
+      "workspace": "auto",
+      "fixture": "pack_installed_modified",
+      "capabilities": [],
+      "prompt": "Use $guru-packs to remove the installed Wiki Pack source. Preserve the evolved project-owned local Wiki exactly as it is.",
+      "expected": "Removes only the hidden source slot and preserves the locally amended Wiki.",
+      "checks": [
+        {"type": "event_regex", "pattern": "pack remove wiki"},
+        {"type": "path_absent", "path": ".guru-maker/packs/wiki"},
+        {"type": "path_exists", "path": "guru-maker/wiki/valuation/valuation-checklist.md"},
+        {"type": "content_regex", "path": "guru-maker/wiki/valuation/valuation-checklist.md", "pattern": "Local project amendment"},
+        {"type": "initial_preserved", "path": "guru-maker/wiki/valuation/valuation-checklist.md"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["source/local separation", "removal scope", "no local-memory rollback"]
+    },
+    {
+      "id": "P30",
+      "title": "Mixed-kind Pack request is rejected",
+      "skill": "guru-packs",
+      "universe": "Cross-asset",
+      "intent": "Create invalid mixed-kind Pack",
+      "workspace": "auto",
+      "fixture": "mixed_pack_elements",
+      "capabilities": [],
+      "prompt": "Use $guru-packs to create one Pack at mixed-pack containing both the supplied local Wiki and Method elements. I want them bundled together.",
+      "expected": "Explains the one-kind contract and does not create a mixed Pack or silently split the request.",
+      "checks": [
+        {"type": "path_absent", "path": "mixed-pack"},
+        {"type": "change_none", "pattern": "^\\.guru-maker/packs/"},
+        {"type": "final_regex", "pattern": "(one|single|exactly one).*(kind|Wiki|Method)|cannot.*both"},
+        {"type": "knowledge_valid"}
+      ],
+      "qualitative_focus": ["one-kind Pack invariant", "no silent scope change", "actionable clarification"]
+    }
+  ]
+}

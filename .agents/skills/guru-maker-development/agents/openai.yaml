@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guru Maker Development"
+  short_description: "Maintain Guru Maker safely"
+  default_prompt: "Use $guru-maker-development to make and verify a scoped Guru Maker change."

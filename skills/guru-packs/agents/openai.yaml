@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guru Packs"
+  short_description: "Manage GitHub-backed Guru Packs"
+  default_prompt: "Use $guru-packs to inspect or update this project’s Guru Packs."

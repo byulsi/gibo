@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guru Train"
+  short_description: "Improve reusable investment reasoning"
+  default_prompt: "Use $guru-train to run a reviewed investment reasoning postmortem."

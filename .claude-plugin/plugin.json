@@ -1,0 +1,13 @@
+{
+  "name": "guru-maker",
+  "displayName": "Guru Maker",
+  "version": "0.0.1",
+  "description": "Five skills to remember decisions, re-test assumptions, and grow project-owned investment knowledge.",
+  "author": {
+    "name": "monarchjuno"
+  },
+  "repository": "https://github.com/monarchjuno/guru-maker",
+  "license": "Apache-2.0",
+  "keywords": ["investing", "investment-memory", "markdown", "guru-packs"],
+  "skills": "./skills/"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "monarchjuno",
+  "owner": {
+    "name": "monarchjuno"
+  },
+  "description": "Project-owned investment memory and user-owned Guru Packs for AI agent hosts.",
+  "plugins": [
+    {
+      "name": "guru-maker",
+      "source": "./",
+      "description": "Five skills to remember decisions, re-test assumptions, and grow project-owned investment knowledge.",
+      "author": {
+        "name": "monarchjuno"
+      },
+      "repository": "https://github.com/monarchjuno/guru-maker",
+      "license": "Apache-2.0",
+      "keywords": ["investing", "investment-memory", "markdown", "guru-packs"],
+      "category": "Productivity"
+    }
+  ]
+}
