@@ -7,6 +7,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
+    sync::OnceLock,
 };
 
 pub const RELATIONSHIP_TYPES: &[&str] = &["uses", "supports", "contradicts", "updates"];
@@ -130,6 +131,7 @@ pub fn search(
         return Err("knowledge search limit must be between 1 and 50".into());
     }
     let docs = catalog_local(root);
+    let query = SearchText::new(query.trim());
     let wanted_entity = entity.map(str::to_ascii_lowercase);
     let mut out = Vec::new();
     for doc in docs {
@@ -140,26 +142,40 @@ pub fn search(
         {
             continue;
         }
+        let document_relevance = document_relevance(&doc, &query);
+        let document_numbers = document_sensitive_numbers(&doc);
+        let mut matched_section = false;
         for section in split_sections(&doc.body) {
-            let score = section_score(&doc, &section, query);
-            if score > 0 {
-                out.push(SearchResult {
-                    id: doc.id.clone(),
-                    kind: doc.kind.clone(),
-                    title: doc.title.clone(),
-                    summary: doc.summary.clone(),
-                    as_of: doc.as_of.clone(),
-                    path: doc.path.clone(),
-                    section: section.heading.clone(),
-                    heading_path: section.heading_path.clone(),
-                    entities: doc.entities.clone(),
-                    origin: doc.origin.clone(),
-                    mutable: doc.mutable,
-                    relationships: doc.relationships.clone(),
-                    score,
-                    text: contextual(&doc, &section),
-                });
+            let section_relevance = section_relevance(&section, &query);
+            let section_numbers = section_sensitive_numbers(&section);
+            let numbers_match = query.sensitive_numbers.iter().all(|number| {
+                document_numbers.contains(number) || section_numbers.contains(number)
+            });
+            let weak_section_for_strong_document =
+                document_relevance.tier >= 3 && section_relevance.tier == 1;
+            if section_relevance.is_match() && numbers_match && !weak_section_for_strong_document {
+                matched_section = true;
+                out.push(search_result(
+                    &doc,
+                    &section,
+                    document_relevance.combined(section_relevance).score(),
+                ));
             }
+        }
+        if !matched_section
+            && document_relevance.is_match()
+            && query.sensitive_numbers.is_subset(&document_numbers)
+        {
+            let document_level = Section {
+                heading: String::new(),
+                heading_path: vec![],
+                text: String::new(),
+            };
+            out.push(search_result(
+                &doc,
+                &document_level,
+                document_relevance.score(),
+            ));
         }
     }
     out.sort_by(search_result_order);
@@ -626,54 +642,275 @@ fn clean(value: &str) -> String {
         value.into()
     }
 }
-fn tokens(value: &str) -> BTreeSet<String> {
-    let identifiers = Regex::new(r"[\w:./+@#-]+").unwrap();
-    let components = Regex::new(r"\w+").unwrap();
+#[derive(Clone, Debug)]
+struct SearchText {
+    normalized: String,
+    compact: String,
+    compact_eligible: bool,
+    sensitive_numbers: BTreeSet<String>,
+    tokens: BTreeSet<String>,
+}
+
+impl SearchText {
+    fn new(value: &str) -> Self {
+        let normalized = normalize_search_text(value);
+        let compact_eligible = normalized.chars().any(is_spacing_insensitive_script)
+            && normalized.chars().all(|character| {
+                !character.is_alphanumeric() || is_spacing_insensitive_script(character)
+            });
+        let compact = normalized
+            .chars()
+            .filter(|character| character.is_alphanumeric())
+            .collect();
+        let sensitive_numbers = sensitive_numbers(&normalized);
+        let tokens = search_tokens(&normalized);
+        Self {
+            normalized,
+            compact,
+            compact_eligible,
+            sensitive_numbers,
+            tokens,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct Relevance {
+    tier: i32,
+    points: i32,
+}
+
+impl Relevance {
+    fn add(&mut self, other: Self) {
+        self.tier = self.tier.max(other.tier);
+        self.points = self.points.saturating_add(other.points);
+    }
+
+    fn combined(mut self, other: Self) -> Self {
+        self.add(other);
+        self
+    }
+
+    fn is_match(self) -> bool {
+        self.tier > 0
+    }
+
+    fn score(self) -> i32 {
+        self.tier * 1_000 + self.points.min(999)
+    }
+}
+
+fn normalize_search_text(value: &str) -> String {
+    value
+        .chars()
+        .map(|character| match character {
+            '\u{2212}' | '\u{fe63}' | '\u{ff0d}' => '-',
+            '\u{fe62}' | '\u{ff0b}' => '+',
+            '\u{ff05}' => '%',
+            _ => character,
+        })
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
+fn identifier_pattern() -> &'static Regex {
+    static IDENTIFIERS: OnceLock<Regex> = OnceLock::new();
+    IDENTIFIERS.get_or_init(|| Regex::new(r"[\w:./+@#-]+").unwrap())
+}
+
+fn component_pattern() -> &'static Regex {
+    static COMPONENTS: OnceLock<Regex> = OnceLock::new();
+    COMPONENTS.get_or_init(|| Regex::new(r"\w+").unwrap())
+}
+
+fn sensitive_number_pattern() -> &'static Regex {
+    static SENSITIVE_NUMBERS: OnceLock<Regex> = OnceLock::new();
+    SENSITIVE_NUMBERS.get_or_init(|| {
+        Regex::new(r"(?:^|[^\w])([+-]?\d+(?:\.\d+)?(?:/\d+(?:\.\d+)?)?%?)").unwrap()
+    })
+}
+
+fn is_spacing_insensitive_script(character: char) -> bool {
+    let codepoint = character as u32;
+    (0x1100..=0x11ff).contains(&codepoint)
+        || (0x3040..=0x30ff).contains(&codepoint)
+        || (0x3130..=0x318f).contains(&codepoint)
+        || (0x31f0..=0x31ff).contains(&codepoint)
+        || (0x3400..=0x4dbf).contains(&codepoint)
+        || (0x4e00..=0x9fff).contains(&codepoint)
+        || (0xa960..=0xa97f).contains(&codepoint)
+        || (0xac00..=0xd7af).contains(&codepoint)
+        || (0xd7b0..=0xd7ff).contains(&codepoint)
+        || (0xf900..=0xfaff).contains(&codepoint)
+        || (0xff65..=0xff9f).contains(&codepoint)
+        || (0x20000..=0x323af).contains(&codepoint)
+}
+
+fn sensitive_numbers(normalized: &str) -> BTreeSet<String> {
+    sensitive_number_pattern()
+        .captures_iter(normalized)
+        .filter_map(|captures| captures.get(1))
+        .map(|value| value.as_str())
+        .filter(|value| {
+            value
+                .chars()
+                .any(|character| matches!(character, '+' | '-' | '.' | '/' | '%'))
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
+fn contains_bounded_phrase(value: &str, query: &str) -> bool {
+    let Some(first) = query.chars().next() else {
+        return false;
+    };
+    let last = query
+        .chars()
+        .next_back()
+        .expect("a query with a first character has a last character");
+    value.match_indices(query).any(|(start, matched)| {
+        let end = start + matched.len();
+        let starts_at_boundary = !first.is_alphanumeric()
+            || value[..start]
+                .chars()
+                .next_back()
+                .is_none_or(|character| !character.is_alphanumeric());
+        let ends_at_boundary = !last.is_alphanumeric()
+            || value[end..]
+                .chars()
+                .next()
+                .is_none_or(|character| !character.is_alphanumeric());
+        starts_at_boundary && ends_at_boundary
+    })
+}
+
+fn search_tokens(normalized: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
-    for identifier in identifiers.find_iter(value) {
-        let value = identifier.as_str().to_ascii_lowercase();
+    for identifier in identifier_pattern().find_iter(normalized) {
+        let value = identifier.as_str().to_owned();
         out.insert(value.clone());
         out.extend(
-            components
+            component_pattern()
                 .find_iter(&value)
                 .map(|component| component.as_str().to_owned()),
         );
     }
     out
 }
-fn section_score(doc: &Document, section: &Section, query: &str) -> i32 {
-    let q = query.to_ascii_lowercase();
-    let terms = tokens(query);
-    let aliases = doc.aliases.join(" ");
-    let entities = doc.entities.join(" ");
-    let tags = doc.tags.join(" ");
-    let relationships = doc
-        .relationships
-        .iter()
-        .map(|relationship| relationship.target.as_str())
-        .collect::<Vec<_>>()
-        .join(" ");
-    let period = doc.period.as_deref().unwrap_or_default();
-    let mut score = 0;
-    for (v, w) in [
-        (doc.id.as_str(), 14),
-        (doc.title.as_str(), 12),
-        (aliases.as_str(), 12),
-        (entities.as_str(), 12),
-        (tags.as_str(), 8),
-        (period, 8),
-        (doc.summary.as_str(), 7),
-        (section.heading.as_str(), 8),
-        (relationships.as_str(), 4),
-        (section.text.as_str(), 4),
-    ] {
-        if v.to_ascii_lowercase().contains(&q) {
-            score += w
-        } else {
-            score += tokens(v).intersection(&terms).count() as i32 * w / 2
-        }
+
+fn field_relevance(value: &str, weight: i32, query: &SearchText, allow_compact: bool) -> Relevance {
+    if value.is_empty() {
+        return Relevance::default();
     }
-    score
+    let value = SearchText::new(value);
+    let compact_match =
+        allow_compact && query.compact_eligible && query.compact.chars().count() >= 3;
+    let exact =
+        value.normalized == query.normalized || (compact_match && value.compact == query.compact);
+    let phrase = (query.tokens.len() > 1
+        && contains_bounded_phrase(&value.normalized, &query.normalized))
+        || (compact_match && value.compact.contains(&query.compact));
+    let matched = value.tokens.intersection(&query.tokens).count() as i32;
+    let query_terms = query.tokens.len() as i32;
+    let tier = if exact {
+        4
+    } else if phrase {
+        3
+    } else if query_terms > 0 && matched == query_terms {
+        2
+    } else if matched > 0 {
+        1
+    } else {
+        0
+    };
+    Relevance {
+        tier,
+        points: if tier > 0 { matched.max(1) * weight } else { 0 },
+    }
+}
+
+fn document_relevance(doc: &Document, query: &SearchText) -> Relevance {
+    let mut relevance = field_relevance(&doc.id, 14, query, false);
+    if normalize_search_text(&doc.id) == query.normalized {
+        relevance.tier = 5;
+    }
+    relevance.add(field_relevance(&doc.title, 12, query, true));
+    for value in &doc.aliases {
+        relevance.add(field_relevance(value, 12, query, true));
+    }
+    for value in &doc.entities {
+        relevance.add(field_relevance(value, 12, query, false));
+    }
+    for value in &doc.tags {
+        relevance.add(field_relevance(value, 8, query, true));
+    }
+    relevance.add(field_relevance(
+        doc.period.as_deref().unwrap_or_default(),
+        8,
+        query,
+        false,
+    ));
+    relevance.add(field_relevance(&doc.summary, 7, query, false));
+    for relationship in &doc.relationships {
+        relevance.add(field_relevance(&relationship.target, 4, query, false));
+    }
+    relevance
+}
+
+fn section_relevance(section: &Section, query: &SearchText) -> Relevance {
+    field_relevance(&section.heading, 8, query, true).combined(field_relevance(
+        &section.text,
+        4,
+        query,
+        false,
+    ))
+}
+
+fn document_sensitive_numbers(doc: &Document) -> BTreeSet<String> {
+    let mut numbers = BTreeSet::new();
+    for value in [
+        doc.id.as_str(),
+        doc.title.as_str(),
+        doc.summary.as_str(),
+        doc.period.as_deref().unwrap_or_default(),
+    ]
+    .into_iter()
+    .chain(doc.aliases.iter().map(String::as_str))
+    .chain(doc.entities.iter().map(String::as_str))
+    .chain(doc.tags.iter().map(String::as_str))
+    .chain(
+        doc.relationships
+            .iter()
+            .map(|relationship| relationship.target.as_str()),
+    ) {
+        numbers.extend(sensitive_numbers(&normalize_search_text(value)));
+    }
+    numbers
+}
+
+fn section_sensitive_numbers(section: &Section) -> BTreeSet<String> {
+    let mut numbers = sensitive_numbers(&normalize_search_text(&section.heading));
+    numbers.extend(sensitive_numbers(&normalize_search_text(&section.text)));
+    numbers
+}
+
+fn search_result(doc: &Document, section: &Section, score: i32) -> SearchResult {
+    SearchResult {
+        id: doc.id.clone(),
+        kind: doc.kind.clone(),
+        title: doc.title.clone(),
+        summary: doc.summary.clone(),
+        as_of: doc.as_of.clone(),
+        path: doc.path.clone(),
+        section: section.heading.clone(),
+        heading_path: section.heading_path.clone(),
+        entities: doc.entities.clone(),
+        origin: doc.origin.clone(),
+        mutable: doc.mutable,
+        relationships: doc.relationships.clone(),
+        score,
+        text: contextual(doc, section),
+    }
 }
 fn search_result_order(a: &SearchResult, b: &SearchResult) -> std::cmp::Ordering {
     b.score

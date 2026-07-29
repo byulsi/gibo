@@ -138,10 +138,22 @@ under `.guru-maker/packs/` are never searched or placed in context. An
 installed Pack seeds local memory once; the local copy then behaves like any
 other project-owned element.
 
-Search returns the best matching authored section from each element. Exact
-IDs, titles, aliases, entities, tags, summaries, periods, headings, and
-authored relationship targets contribute to lexical relevance. Equal scores
-prefer the newer `as_of`.
+Search returns the best matching authored section from each element. When only
+element metadata matches, it returns document-level context rather than an
+unrelated section. Exact local IDs rank first while authored relationship
+targets remain discoverable. Exact titles, aliases, entities, and phrases rank
+ahead of complete-token and partial-token matches across tags, summaries,
+periods, headings, and content. ASCII words and phrases match at alphanumeric
+boundaries, not substrings inside longer words. Unicode lowercase normalizes
+case. A space- and punctuation-insensitive comparison is limited to digit-free
+Hangul, Han, and Kana queries against concise titles, aliases, tags, and
+headings. Common Unicode sign variants are normalized, and signed, decimal,
+percentage, and ratio literals must agree exactly. Equal scores prefer the
+newer `as_of`.
+
+This remains deterministic lexical retrieval. It does not infer synonyms,
+translations, or relationships. The bounded host reformulation below handles a
+plausible terminology or language mismatch.
 
 For direct recall, run one targeted query and read a selected exact ID. After a
 no-match, one bounded reformulation is allowed when an alias, identifier,
