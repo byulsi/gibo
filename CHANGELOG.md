@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.2 - 2026-07-30
+
+- Improve deterministic knowledge search with stronger exact and metadata
+  ranking, bounded phrase matching, numeric-literal precision, and compact
+  Hangul, Han, and Kana recall.
+- Add focused multilingual and retrieval-quality regression coverage.
+- Define an LLM-friendly Wiki authoring contract for reusable scientific,
+  technical, industry, and investment knowledge while keeping time-sensitive
+  results in provenance-bound Evidence.
+- Document measured, non-operative evaluation gates for optional Wiki
+  backlinks and hybrid semantic retrieval without adding a graph, embedding
+  index, or vector store.
+
 ## 0.0.1 - 2026-07-29
 
 - Introduce Guru Maker as a host-neutral investment memory layer for Codex,

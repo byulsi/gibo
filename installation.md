@@ -36,6 +36,12 @@ Concrete market examples default to familiar U.S. instruments. This is a
 documentation convention only; all five Skills remain market- and
 asset-neutral.
 
+The memory contract is domain-neutral as well. Wiki may retain reusable
+scientific, technical, or industry knowledge without naming a security when it
+has a concrete future investment-research use; it does not collect general
+encyclopedia material. See the [Wiki authoring
+contract](docs/knowledge-model.md#wiki-authoring).
+
 ## Claude Code
 
 Add the repository marketplace and install the plugin:

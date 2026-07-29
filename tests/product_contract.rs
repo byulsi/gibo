@@ -373,6 +373,98 @@ fn record_and_pack_context_boundaries_are_explicit() {
 }
 
 #[test]
+fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
+    let records = normalized("shared/gurumaker/references/record-contract.md");
+    for required in [
+        "science, technology, industry",
+        "one coherent concept or question",
+        "stable semantic ID",
+        "shallow subject folders",
+        "descriptive, unique ATX headings",
+        "remain intelligible when retrieved alone",
+        "general encyclopedia dump",
+        "experimental result, benchmark result",
+        "time-sensitive state in Evidence with provenance and a cutoff",
+        "Pack creation does not follow or validate them",
+        "do not create graph edges or automatically load context",
+    ] {
+        assert!(
+            records.contains(required),
+            "Wiki authoring contract misses {required}"
+        );
+    }
+
+    let knowledge_model = normalized("docs/knowledge-model.md");
+    for required in [
+        "science, technology, industry",
+        "not a general encyclopedia",
+        "stable semantic ID",
+        "lexical retrieval section boundaries",
+        "avoid line-start ATX-like comment lines inside fenced examples",
+        "provenance and a cutoff",
+        "do not create edges",
+        "Pack creation neither follows nor validates them",
+    ] {
+        assert!(
+            knowledge_model.contains(required),
+            "knowledge model misses Wiki boundary {required}"
+        );
+    }
+
+    let readme = normalized("README.md");
+    for required in [
+        "Reusable scientific and technical knowledge",
+        "company or industry research",
+        "provenance-bound Evidence",
+    ] {
+        assert!(readme.contains(required), "README misses {required}");
+    }
+
+    let installation = normalized("installation.md");
+    for required in [
+        "memory contract is domain-neutral",
+        "without naming a security",
+        "does not collect general encyclopedia material",
+        "docs/knowledge-model.md#wiki-authoring",
+    ] {
+        assert!(
+            installation.contains(required),
+            "installation guide misses {required}"
+        );
+    }
+
+    let architecture = normalized("docs/architecture.md");
+    for required in [
+        "stable semantic ID owns identity",
+        "Shallow subject folders are optional organization",
+        "independently intelligible retrieval sections",
+        "automatic context expansion",
+    ] {
+        assert!(
+            architecture.contains(required),
+            "architecture misses {required}"
+        );
+    }
+}
+
+#[test]
+fn future_retrieval_roadmap_is_measured_and_non_operative() {
+    let readme = normalized("README.md");
+    for required in [
+        "evaluation gates, not promised features",
+        "current retrieval remains project-scoped lexical search followed by exact-ID reads",
+        "rebuildable from local Markdown",
+        "ignore Pack source checkouts",
+        "explicit authored Wiki-reference contract",
+        "must not infer edges",
+        "Embeddings or a vector store require an explicit revision",
+        "without unacceptable precision, context-token, latency, or migration cost",
+    ] {
+        assert!(readme.contains(required), "roadmap misses {required}");
+    }
+}
+
+#[test]
 fn guru_mode_is_default_auto_and_explicitly_bounded() {
     let mode = normalized("shared/gurumaker/references/guru-mode.md");
     for required in [

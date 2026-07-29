@@ -34,6 +34,37 @@ and limits.
 | `evidence/` | `source` and a provenance-bound direct observation or reproducible derived result; optional `published_at` and `period` |
 | `decision/` | Question, judgment, information cutoff, constraints, reasoning, risks, invalidation conditions, and uncertainty |
 
+## Wiki authoring
+
+A Wiki may retain reusable explanatory knowledge from science, technology,
+industry, value chains, standards, regulation, accounting, or market
+conventions even when it does not name a security, provided it is reasonably
+likely to improve later investment research, interpretation, or risk analysis.
+Do not capture material merely because it is interesting or build a general
+encyclopedia dump.
+
+Keep one coherent concept or question, not one isolated fact or an entire
+field, in each Wiki element under a stable semantic ID. Start flat when no
+durable grouping exists. Add shallow subject folders only after stable groups
+emerge; a path organizes files but does not define identity, relevance, or a
+relationship. Put searchable meaning in the title, summary, and useful aliases
+or tags.
+
+Use descriptive, unique ATX headings whose sections contain enough context to
+remain intelligible when retrieved alone. Synthesize the mechanism, scope,
+vocabulary, measurements, boundary conditions, constraints, limits, and
+investment relevance that are likely to matter again. Cite authoritative
+sources in ordinary Markdown when accuracy depends on them.
+
+Keep stable explanatory context in Wiki. Put a current experimental result,
+benchmark result, dated vendor roadmap or company claim, or other
+time-sensitive state in Evidence with provenance and a cutoff. Put a repeatable
+procedure in Method, an interpretation or hypothesis in Lens, and a judgment in
+Decision. Optional source links or related-concept references are navigation
+hints only. Pack creation does not follow or validate them; every Wiki remains
+independently understandable, and they do not create graph edges or
+automatically load context.
+
 For derived Evidence, use `source` as the result or primary provenance locator
 and record material input sources, data window and frequency, units,
 transformations, parameters, benchmark, costs, and artifact, code, or model

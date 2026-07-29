@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml/badge.svg)](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml)
 ![Rust 1.82+](https://img.shields.io/badge/Rust-1.82%2B-000000?logo=rust&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.1-blue)
+![Version](https://img.shields.io/badge/version-0.0.2-blue)
 
 </div>
 
@@ -80,6 +80,13 @@ The Wiki can preserve how wafer fabrication, HBM, advanced packaging,
 substrates, testing, work in process, qualification lead times, shipments, and
 revenue timing fit together. It keeps the stable causal map, not a permanent
 view on any company or a stale market claim.
+
+Wiki is not limited to finance or named securities. Reusable scientific and
+technical knowledge, such as how quantum error correction constrains logical
+qubit scaling, belongs there when it can materially improve later company or
+industry research. Current experimental results, benchmark results, dated
+vendor roadmaps, and current company claims remain provenance-bound Evidence
+rather than timeless Wiki facts.
 
 ### 2. Make the next research task better
 
@@ -205,6 +212,29 @@ Host agents discover five public Skills:
 - [Decision memory and graph](docs/decision-memory.md)
 - [Guru Pack contract](docs/community-plugins.md)
 - [Architecture and product boundaries](docs/architecture.md)
+
+## Measured evolution
+
+Markdown records and authored relationships remain canonical. These are
+evaluation gates, not promised features: current retrieval remains
+project-scoped lexical search followed by exact-ID reads. Any derived layer
+must be rebuildable from local Markdown and ignore Pack source checkouts.
+
+- **Wiki backlinks and explicit one-hop navigation.** Only if a representative
+  corpus shows material related-memory misses or impact-analysis cost, evaluate
+  an explicit authored Wiki-reference contract and disposable reverse
+  projection. This requires a product-boundary revision and must not infer
+  edges, treat every Markdown link as a relationship, traverse automatically,
+  or load context automatically.
+- **Hybrid semantic retrieval.** Only if a labeled project corpus shows lexical
+  Recall@K missing a stated target across terminology, language, or conceptual
+  variation, evaluate a rebuildable semantic index as a supplement to lexical
+  search. Exact IDs, numeric literals, and authored metadata remain
+  authoritative. Embeddings or a vector store require an explicit revision of
+  the current product boundary before implementation.
+
+Any accepted extension must improve a stated retrieval or navigation metric
+without unacceptable precision, context-token, latency, or migration cost.
 
 ## Development
 

@@ -31,6 +31,13 @@ Wiki, Lens, and Method elements are reusable and independently understandable
 and usable. Evidence and Decisions are project-local point-in-time memory and
 own the minimal authored relationships.
 
+A Wiki may hold reusable scientific, technical, industry, or other domain
+knowledge when it can improve future investment work. Its stable semantic ID
+owns identity. Shallow subject folders are optional organization, while
+descriptive headings delimit independently intelligible retrieval sections;
+neither folders nor headings create inherited metadata, graph relationships,
+or automatic context expansion.
+
 The tracked `.guru-maker/mode` setting is `auto` or `off`. `auto` is the
 default. It permits minimum, reviewable in-task memory improvements inside an
 already initialized project. `off` requires an explicit user request for every

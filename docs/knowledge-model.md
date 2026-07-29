@@ -92,6 +92,66 @@ Git preserves their revisions. Evidence and Decisions remain point-in-time
 records. Correct only clerical or source-transcription Evidence mistakes in
 place. A substantive later correction becomes new Evidence.
 
+## Wiki authoring
+
+Wiki is not limited to financial definitions or facts about named securities.
+It may preserve reusable science, technology, industry, value-chain, standards,
+regulatory, accounting, or market knowledge when that knowledge is reasonably
+likely to improve later investment research, interpretation, or risk analysis.
+It is not a general encyclopedia: retain a coherent concept or question that is
+likely to matter again, not an isolated fact or an entire field.
+
+For example, a technical Wiki might begin:
+
+```markdown
+---
+id: wiki:quantum-error-correction
+title: Quantum error correction
+summary: Why logical qubits require physical redundancy and how that constrains commercialization.
+as_of: 2026-07-29T09:00:00+09:00
+aliases: [QEC, logical qubit]
+tags: [quantum-computing]
+---
+
+# Core mechanism
+
+Self-contained explanation of the reusable mechanism...
+
+# Constraints and measurements
+
+Definitions, units, boundary conditions, and common comparison errors...
+
+# Investment relevance
+
+How the mechanism changes questions about scaling, suppliers, and timelines...
+
+# Limits and sources
+
+What this map does not establish, with authoritative source links...
+```
+
+Keep one coherent concept or question under one stable semantic ID. Begin with
+flat files when no durable grouping exists, then add shallow subject folders
+only as stable groups emerge. Paths organize files; they do not define
+identity, inherit tags, create relationships, or affect search relevance. Put
+searchable meaning in the title, summary, and useful aliases or tags.
+
+The Runtime treats line-start ATX markers as lexical retrieval section
+boundaries. Keep intended headings unique and descriptive, avoid line-start
+ATX-like comment lines inside fenced examples, and give each section enough
+context to remain intelligible when returned alone. Prefer a small number of
+substantive sections over tiny fragments, keyword dumps, or link-only pages.
+Ordinary Markdown links may cite sources or aid navigation, but they do not
+create edges or trigger dependency loading. Pack creation neither follows nor
+validates them, so a shareable element may depend only on its own text.
+
+Wiki owns durable explanatory context. A current experimental result, benchmark
+result, dated vendor roadmap or company claim, or market state belongs in
+Evidence with provenance and a cutoff. A repeatable procedure belongs in
+Method, an interpretation or hypothesis in Lens, and a judgment in Decision.
+This keeps a stable technical map reusable while requiring later research to
+refresh what has changed.
+
 ## Minimal relationship model
 
 Wiki, Lens, and Method elements have no structured memory relationships. They
