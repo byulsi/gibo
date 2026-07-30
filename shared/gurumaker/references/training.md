@@ -10,6 +10,10 @@ A personal, aesthetic, or presentation preference is ineligible on its own. A
 convention may become a Method only when its analytical rationale, repeatable
 investment use, applicability, and limits have been reviewed. Reject
 ineligible content without searching or writing memory.
+One anecdote cannot establish a universal causal rule. Reject that requested
+write completely; do not silently replace it with a safer counter-rule,
+validation Method, or another memory kind in the same task. Offer the review,
+adjacent case, or counterexample test required before any later write.
 
 Use a bounded scenario, correction, or postmortem. Reconstruct the relevant
 facts and reasoning, assess process quality separately from outcome luck, and
@@ -24,12 +28,13 @@ Write only a durable, specific, independently self-contained improvement:
 - a Wiki for reusable sourced domain knowledge; or
 - a Method for a repeatable procedure and its limits.
 
-Before any write, run a targeted search for the reusable concept and read a
-selected match by exact ID. Use at most one bounded reformulation when a
+Before any write, search for the reusable concept with compact candidates and
+read a selected match by exact ID. Use at most one bounded reformulation when a
 terminology mismatch is plausible. Do not create memory for a transient
 preference, an unreviewed inference, or a session transcript. Record where the
 lesson applies and its limits; update an existing semantic record when it
-improves the same concept. Do not add structured memory relationships to Wiki,
-Lens, or Method. Run `knowledge check` once after an edit unless the optional
-post-edit hook already reported the result. Leave changes uncommitted unless a
-separate request asks for Git actions.
+improves the same concept. Wiki may add exact `see_also` navigation, while Lens
+and Method do not gain structured links. Follow the bounded curation contract,
+run touched-kind health, and run one `knowledge check` after the complete edit
+unless the optional post-edit hook already reported the result. Leave changes
+uncommitted unless a separate request asks for Git actions.

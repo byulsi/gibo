@@ -1,8 +1,8 @@
 {
   "name": "guru-maker",
   "displayName": "Guru Maker",
-  "version": "0.0.2",
-  "description": "Five skills to remember decisions, re-test assumptions, and grow project-owned investment knowledge.",
+  "version": "0.0.3",
+  "description": "Five skills that automatically reuse and grow project-owned investment memory from matching natural-language tasks.",
   "author": {
     "name": "monarchjuno"
   },

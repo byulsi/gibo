@@ -26,6 +26,13 @@ The Runtime exposes `gurumaker mode [auto|off] --workspace <project-root>` for
 the project-local Guru Mode setting. Reading the mode is non-mutating; changing
 it requires an explicit user request under the Guru Mode contract.
 
+Project-memory reads use `knowledge search`, `read`, `neighbors`, and `health`.
+`search --candidates` returns compact metadata without record bodies and
+accepts repeated `--kind` values as an OR filter. `neighbors` derives one-hop
+Wiki `see_also` and backlink cards without recursion. `health` reports
+read-only collection advisories; it never changes memory. Schema and reference
+failures remain the responsibility of `knowledge check`.
+
 The plain `runtime/version` file pins the exact Rust Runtime expected by every
 public Skill. The wrapper first accepts an exact
 `GURUMAKER_RUNTIME_BIN` override, then the managed version, then an exact

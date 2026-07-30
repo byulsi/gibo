@@ -19,6 +19,8 @@ pub const KNOWLEDGE_KINDS: &[&str] = &["lens", "wiki", "evidence", "method", "de
 pub struct Frontmatter {
     pub scalar: BTreeMap<String, String>,
     pub lists: BTreeMap<String, Vec<String>>,
+    pub declared_fields: BTreeSet<String>,
+    pub duplicate_fields: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
@@ -32,6 +34,7 @@ pub struct Document {
     pub entities: Vec<String>,
     pub aliases: Vec<String>,
     pub tags: Vec<String>,
+    pub see_also: Vec<String>,
     pub source: Option<String>,
     pub published_at: Option<String>,
     pub period: Option<String>,
@@ -44,6 +47,10 @@ pub struct Document {
     pub body: String,
     #[serde(skip_serializing)]
     pub read_error: Option<String>,
+    #[serde(skip_serializing)]
+    pub declared_fields: BTreeSet<String>,
+    #[serde(skip_serializing)]
+    pub duplicate_fields: BTreeSet<String>,
 }
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Relationship {
@@ -73,6 +80,62 @@ pub struct SearchResult {
     pub relationships: Vec<Relationship>,
     pub score: i32,
     pub text: String,
+    #[serde(skip_serializing)]
+    pub aliases: Vec<String>,
+    #[serde(skip_serializing)]
+    pub tags: Vec<String>,
+    #[serde(skip_serializing)]
+    pub match_tier: MatchTier,
+    #[serde(skip_serializing)]
+    pub matched_fields: Vec<String>,
+    #[serde(skip_serializing)]
+    pub matched_terms: Vec<String>,
+}
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MatchTier {
+    ExactId,
+    ExactMetadata,
+    Phrase,
+    AllTerms,
+    #[default]
+    Partial,
+}
+impl MatchTier {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::ExactId => "exact_id",
+            Self::ExactMetadata => "exact_metadata",
+            Self::Phrase => "phrase",
+            Self::AllTerms => "all_terms",
+            Self::Partial => "partial",
+        }
+    }
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct CandidateResult {
+    pub id: String,
+    pub kind: String,
+    pub title: String,
+    pub summary: String,
+    pub as_of: String,
+    pub path: String,
+    pub section: String,
+    pub heading_path: Vec<String>,
+    pub entities: Vec<String>,
+    pub aliases: Vec<String>,
+    pub tags: Vec<String>,
+    pub relationships: Vec<Relationship>,
+    pub score: i32,
+    pub match_tier: MatchTier,
+    pub matched_fields: Vec<String>,
+    pub matched_terms: Vec<String>,
+}
+#[derive(Clone, Debug)]
+struct RankedSearchResult {
+    result: SearchResult,
+    document: Document,
+    section: Section,
 }
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct KnowledgeIssue {
@@ -85,6 +148,42 @@ pub struct KnowledgeCheck {
     pub valid: bool,
     pub documents: usize,
     pub errors: Vec<KnowledgeIssue>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct KnowledgeCard {
+    pub id: String,
+    pub kind: String,
+    pub title: String,
+    pub summary: String,
+    pub as_of: String,
+    pub path: String,
+    pub entities: Vec<String>,
+    pub aliases: Vec<String>,
+    pub tags: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct KnowledgeNeighbors {
+    pub document: KnowledgeCard,
+    pub outgoing: Vec<KnowledgeCard>,
+    pub incoming: Vec<KnowledgeCard>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Ord, PartialOrd)]
+pub struct HealthAdvisory {
+    pub code: String,
+    pub ids: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct KindHealth {
+    pub kind: String,
+    pub documents: usize,
+    pub folders: usize,
+    pub max_depth: usize,
+    pub review_band: String,
+    pub advisories: Vec<HealthAdvisory>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub struct KnowledgeHealth {
+    pub kinds: Vec<KindHealth>,
 }
 
 pub fn infer_kind(path: &Path, root: &Path) -> String {
@@ -112,19 +211,41 @@ pub fn catalog_local(root: &Path) -> Vec<Document> {
     docs.sort_by(|a, b| (&a.kind, &a.id).cmp(&(&b.kind, &b.id)));
     docs
 }
-pub fn search(
+pub fn search_with_kinds(
     root: &Path,
     query: &str,
-    kind: Option<&str>,
+    kinds: &[String],
     entity: Option<&str>,
     limit: usize,
+) -> Result<Vec<SearchResult>, String> {
+    search_internal(root, query, kinds, entity, limit, false)
+}
+
+pub fn search_candidates_with_kinds(
+    root: &Path,
+    query: &str,
+    kinds: &[String],
+    entity: Option<&str>,
+    limit: usize,
+) -> Result<Vec<CandidateResult>, String> {
+    search_internal(root, query, kinds, entity, limit, true)
+        .map(|results| candidate_results(&results))
+}
+
+fn search_internal(
+    root: &Path,
+    query: &str,
+    kinds: &[String],
+    entity: Option<&str>,
+    limit: usize,
+    explain: bool,
 ) -> Result<Vec<SearchResult>, String> {
     if query.trim().is_empty() {
         return Err("knowledge search query must not be empty".into());
     }
-    if let Some(k) = kind {
-        if !KNOWLEDGE_KINDS.contains(&k) {
-            return Err("unknown knowledge kind".into());
+    for k in kinds {
+        if !KNOWLEDGE_KINDS.contains(&k.as_str()) {
+            return Err(format!("unknown knowledge kind: {k}"));
         }
     }
     if !(1..=50).contains(&limit) {
@@ -135,7 +256,7 @@ pub fn search(
     let wanted_entity = entity.map(str::to_ascii_lowercase);
     let mut out = Vec::new();
     for doc in docs {
-        if kind.is_some_and(|k| doc.kind != k)
+        if (!kinds.is_empty() && !kinds.iter().any(|kind| kind == &doc.kind))
             || wanted_entity
                 .as_ref()
                 .is_some_and(|e| !doc.entities.iter().any(|x| x.eq_ignore_ascii_case(e)))
@@ -145,25 +266,42 @@ pub fn search(
         let document_relevance = document_relevance(&doc, &query);
         let document_numbers = document_sensitive_numbers(&doc);
         let mut matched_section = false;
+        let mut best = None;
         for section in split_sections(&doc.body) {
             let section_relevance = section_relevance(&section, &query);
             let section_numbers = section_sensitive_numbers(&section);
             let numbers_match = query.sensitive_numbers.iter().all(|number| {
                 document_numbers.contains(number) || section_numbers.contains(number)
             });
-            let weak_section_for_strong_document =
-                document_relevance.tier >= 3 && section_relevance.tier == 1;
-            if section_relevance.is_match() && numbers_match && !weak_section_for_strong_document {
+            let complete_concise_document_match = !query.tokens.is_empty()
+                && query.tokens.is_subset(&document_relevance.concise_terms);
+            let weak_section_for_strong_document = (document_relevance.relevance.tier >= 3
+                || complete_concise_document_match)
+                && section_relevance.relevance.tier == 1;
+            if section_relevance.relevance.is_match()
+                && numbers_match
+                && !weak_section_for_strong_document
+            {
                 matched_section = true;
-                out.push(search_result(
-                    &doc,
-                    &section,
-                    document_relevance.combined(section_relevance).score(),
-                ));
+                let relevance = combined_relevance(&document_relevance, &section_relevance, &query);
+                if has_minimum_query_coverage(
+                    relevance,
+                    &document_relevance,
+                    &section_relevance,
+                    &query,
+                ) {
+                    let result = search_result(&doc, &section, relevance.score());
+                    if best
+                        .as_ref()
+                        .is_none_or(|(current, _)| search_result_order(&result, current).is_lt())
+                    {
+                        best = Some((result, section));
+                    }
+                }
             }
         }
         if !matched_section
-            && document_relevance.is_match()
+            && document_relevance.relevance.is_match()
             && query.sensitive_numbers.is_subset(&document_numbers)
         {
             let document_level = Section {
@@ -171,18 +309,65 @@ pub fn search(
                 heading_path: vec![],
                 text: String::new(),
             };
-            out.push(search_result(
-                &doc,
-                &document_level,
-                document_relevance.score(),
-            ));
+            let section_relevance = SectionRelevance::default();
+            if has_minimum_query_coverage(
+                document_relevance.relevance,
+                &document_relevance,
+                &section_relevance,
+                &query,
+            ) {
+                best = Some((
+                    search_result(&doc, &document_level, document_relevance.relevance.score()),
+                    document_level,
+                ));
+            }
+        }
+        if let Some((result, section)) = best {
+            out.push(RankedSearchResult {
+                result,
+                document: doc,
+                section,
+            });
         }
     }
-    out.sort_by(search_result_order);
+    out.sort_by(|a, b| search_result_order(&a.result, &b.result));
     let mut seen = BTreeSet::new();
-    out.retain(|result| seen.insert(result.id.clone()));
+    out.retain(|item| seen.insert(item.result.id.clone()));
     out.truncate(limit);
-    Ok(out)
+    if explain {
+        for item in &mut out {
+            let (match_tier, matched_fields, matched_terms) =
+                explain_match(&item.document, &item.section, &query);
+            item.result.match_tier = match_tier;
+            item.result.matched_fields = matched_fields;
+            item.result.matched_terms = matched_terms;
+        }
+    }
+    Ok(out.into_iter().map(|item| item.result).collect())
+}
+
+fn candidate_results(results: &[SearchResult]) -> Vec<CandidateResult> {
+    results
+        .iter()
+        .map(|result| CandidateResult {
+            id: result.id.clone(),
+            kind: result.kind.clone(),
+            title: result.title.clone(),
+            summary: result.summary.clone(),
+            as_of: result.as_of.clone(),
+            path: result.path.clone(),
+            section: result.section.clone(),
+            heading_path: result.heading_path.clone(),
+            entities: result.entities.clone(),
+            aliases: result.aliases.clone(),
+            tags: result.tags.clone(),
+            relationships: result.relationships.clone(),
+            score: result.score,
+            match_tier: result.match_tier.clone(),
+            matched_fields: result.matched_fields.clone(),
+            matched_terms: result.matched_terms.clone(),
+        })
+        .collect()
 }
 pub fn check(root: &Path) -> KnowledgeCheck {
     let docs = catalog_local(root);
@@ -228,11 +413,340 @@ pub fn check(root: &Path) -> KnowledgeCheck {
                 ));
             }
         }
+        for target in &doc.see_also {
+            let Some(target_kind) = kinds.get(target.as_str()) else {
+                issues.push(issue(
+                    doc,
+                    "see_also",
+                    &format!("target does not exist: {target}"),
+                ));
+                continue;
+            };
+            if *target_kind != "wiki" {
+                issues.push(issue(
+                    doc,
+                    "see_also",
+                    &format!("target {target} has disallowed kind {target_kind}"),
+                ));
+            }
+        }
     }
     KnowledgeCheck {
         valid: issues.is_empty(),
         documents: docs.len(),
         errors: issues,
+    }
+}
+
+pub fn neighbors(root: &Path, id: &str) -> Result<KnowledgeNeighbors, String> {
+    let docs = catalog_local(root);
+    let mut matches = docs.iter().filter(|doc| doc.id == id);
+    let document = matches
+        .next()
+        .ok_or_else(|| format!("knowledge document not found: {id}"))?;
+    if matches.next().is_some() {
+        return Err(format!("knowledge document ID is ambiguous: {id}"));
+    }
+    if document.kind != "wiki" {
+        return Err(format!("knowledge neighbors requires a Wiki ID: {id}"));
+    }
+
+    let by_id = docs
+        .iter()
+        .filter(|doc| !doc.id.is_empty())
+        .map(|doc| (doc.id.as_str(), doc))
+        .collect::<BTreeMap<_, _>>();
+    let mut outgoing = Vec::new();
+    for target in &document.see_also {
+        let target_document = by_id
+            .get(target.as_str())
+            .ok_or_else(|| format!("see_also target does not exist: {target}"))?;
+        if target_document.kind != "wiki" {
+            return Err(format!("see_also target is not Wiki memory: {target}"));
+        }
+        outgoing.push(knowledge_card(target_document));
+    }
+    outgoing.sort_by(|a, b| a.id.cmp(&b.id));
+    outgoing.dedup_by(|a, b| a.id == b.id);
+
+    let mut incoming = docs
+        .iter()
+        .filter(|candidate| {
+            candidate.kind == "wiki"
+                && candidate.id != document.id
+                && candidate.see_also.iter().any(|target| target == id)
+        })
+        .map(knowledge_card)
+        .collect::<Vec<_>>();
+    incoming.sort_by(|a, b| a.id.cmp(&b.id));
+    Ok(KnowledgeNeighbors {
+        document: knowledge_card(document),
+        outgoing,
+        incoming,
+    })
+}
+
+pub fn health(root: &Path, kind: Option<&str>) -> Result<KnowledgeHealth, String> {
+    if let Some(kind) = kind {
+        if !KNOWLEDGE_KINDS.contains(&kind) {
+            return Err(format!("unknown knowledge kind: {kind}"));
+        }
+    }
+    let docs = catalog_local(root);
+    let kinds = KNOWLEDGE_KINDS
+        .iter()
+        .filter(|candidate| kind.is_none_or(|wanted| wanted == **candidate))
+        .map(|kind| kind_health(&docs, kind))
+        .collect();
+    Ok(KnowledgeHealth { kinds })
+}
+
+fn knowledge_card(doc: &Document) -> KnowledgeCard {
+    KnowledgeCard {
+        id: doc.id.clone(),
+        kind: doc.kind.clone(),
+        title: doc.title.clone(),
+        summary: doc.summary.clone(),
+        as_of: doc.as_of.clone(),
+        path: doc.path.clone(),
+        entities: doc.entities.clone(),
+        aliases: doc.aliases.clone(),
+        tags: doc.tags.clone(),
+    }
+}
+
+fn kind_health(docs: &[Document], kind: &str) -> KindHealth {
+    let documents = docs
+        .iter()
+        .filter(|document| document.kind == kind)
+        .collect::<Vec<_>>();
+    let mut folder_names = BTreeSet::new();
+    let mut max_depth = 0;
+    let mut advisories = Vec::new();
+    let mut deep = Vec::new();
+    let mut large = Vec::new();
+    let mut excessive_links = Vec::new();
+
+    for document in &documents {
+        let folders = subject_folders(document);
+        max_depth = max_depth.max(folders.len());
+        for depth in 1..=folders.len() {
+            folder_names.insert(folders[..depth].join("/"));
+        }
+        if folders.len() > 2 {
+            deep.push(document_key(document));
+        }
+        if document.content.chars().count() > 12_000 || split_sections(&document.body).len() > 8 {
+            large.push(document_key(document));
+        }
+        if kind == "wiki" && document.see_also.len() > 5 {
+            excessive_links.push(document_key(document));
+        }
+    }
+    add_advisory(&mut advisories, "deep_folder", deep);
+    add_advisory(&mut advisories, "large_document", large);
+    add_duplicate_advisories(
+        &mut advisories,
+        "duplicate_title",
+        documents
+            .iter()
+            .filter_map(|document| {
+                let key = normalized_health_key(&document.title);
+                (!key.is_empty()).then(|| (key, document_key(document)))
+            })
+            .collect(),
+    );
+    add_name_collision_advisories(&mut advisories, &documents);
+    add_advisory(&mut advisories, "excessive_see_also", excessive_links);
+    if kind == "evidence" {
+        add_duplicate_advisories(
+            &mut advisories,
+            "duplicate_evidence_candidate",
+            evidence_signatures(&documents),
+        );
+    }
+    if kind == "decision" {
+        add_decision_fork_advisories(&mut advisories, &documents);
+    }
+    advisories.sort();
+
+    KindHealth {
+        kind: kind.to_owned(),
+        documents: documents.len(),
+        folders: folder_names.len(),
+        max_depth,
+        review_band: review_band(kind, &documents).to_owned(),
+        advisories,
+    }
+}
+
+fn subject_folders(doc: &Document) -> Vec<String> {
+    let components = doc.path.split('/').collect::<Vec<_>>();
+    let start = components
+        .windows(2)
+        .position(|window| window == ["guru-maker", doc.kind.as_str()])
+        .map_or(components.len(), |index| index + 2);
+    components
+        .get(start..components.len().saturating_sub(1))
+        .unwrap_or_default()
+        .iter()
+        .map(|component| (*component).to_owned())
+        .collect()
+}
+
+fn document_key(doc: &Document) -> String {
+    if doc.id.is_empty() {
+        doc.path.clone()
+    } else {
+        doc.id.clone()
+    }
+}
+
+fn normalized_health_key(value: &str) -> String {
+    normalize_search_text(value)
+        .chars()
+        .filter(|character| character.is_alphanumeric())
+        .collect()
+}
+
+fn add_advisory(advisories: &mut Vec<HealthAdvisory>, code: &str, mut ids: Vec<String>) {
+    ids.sort();
+    ids.dedup();
+    if !ids.is_empty() {
+        advisories.push(HealthAdvisory {
+            code: code.to_owned(),
+            ids,
+        });
+    }
+}
+
+fn add_duplicate_advisories(
+    advisories: &mut Vec<HealthAdvisory>,
+    code: &str,
+    keyed_ids: Vec<(String, String)>,
+) {
+    let mut groups = BTreeMap::<String, Vec<String>>::new();
+    for (key, id) in keyed_ids {
+        groups.entry(key).or_default().push(id);
+    }
+    for ids in groups.into_values() {
+        let unique = ids.into_iter().collect::<BTreeSet<_>>();
+        if unique.len() > 1 {
+            add_advisory(advisories, code, unique.into_iter().collect());
+        }
+    }
+}
+
+fn add_name_collision_advisories(advisories: &mut Vec<HealthAdvisory>, documents: &[&Document]) {
+    let mut groups = BTreeMap::<String, Vec<(String, bool)>>::new();
+    for document in documents {
+        let id = document_key(document);
+        let title_key = normalized_health_key(&document.title);
+        if !title_key.is_empty() {
+            groups
+                .entry(title_key)
+                .or_default()
+                .push((id.clone(), false));
+        }
+        for alias in &document.aliases {
+            let alias_key = normalized_health_key(alias);
+            if !alias_key.is_empty() {
+                groups
+                    .entry(alias_key)
+                    .or_default()
+                    .push((id.clone(), true));
+            }
+        }
+    }
+    for entries in groups.into_values() {
+        let ids = entries
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect::<BTreeSet<_>>();
+        if ids.len() > 1 && entries.iter().any(|(_, is_alias)| *is_alias) {
+            add_advisory(advisories, "duplicate_alias", ids.into_iter().collect());
+        }
+    }
+}
+
+fn evidence_signatures(documents: &[&Document]) -> Vec<(String, String)> {
+    let mut signatures = Vec::new();
+    for document in documents {
+        let Some(source) = document.source.as_deref().filter(|value| !value.is_empty()) else {
+            continue;
+        };
+        let Some(period) = document.period.as_deref().filter(|value| !value.is_empty()) else {
+            continue;
+        };
+        for entity in &document.entities {
+            signatures.push((
+                format!(
+                    "{}\u{0}{}\u{0}{}",
+                    normalize_search_text(source),
+                    normalize_search_text(period),
+                    normalize_search_text(entity)
+                ),
+                document_key(document),
+            ));
+        }
+    }
+    signatures
+}
+
+fn add_decision_fork_advisories(advisories: &mut Vec<HealthAdvisory>, documents: &[&Document]) {
+    let mut revisions = BTreeMap::<String, Vec<String>>::new();
+    for document in documents {
+        for relationship in &document.relationships {
+            if matches!(relationship.kind.as_str(), "updates" | "contradicts") {
+                revisions
+                    .entry(relationship.target.clone())
+                    .or_default()
+                    .push(document_key(document));
+            }
+        }
+    }
+    for (target, revisions) in revisions {
+        let revisions = revisions.into_iter().collect::<BTreeSet<_>>();
+        if revisions.len() > 1 {
+            let mut ids = vec![target];
+            ids.extend(revisions);
+            add_advisory(advisories, "decision_revision_fork", ids);
+        }
+    }
+}
+
+fn review_band(kind: &str, documents: &[&Document]) -> &'static str {
+    let count = documents.len();
+    let (organize, curate, scale, entity_threshold) = match kind {
+        "wiki" => (25, 75, 200, None),
+        "lens" | "method" => (15, 30, 100, None),
+        "evidence" => (200, 500, 1_000, Some(50)),
+        "decision" => (50, 150, 300, Some(10)),
+        _ => (usize::MAX, usize::MAX, usize::MAX, None),
+    };
+    if count >= scale {
+        "scale"
+    } else if count >= curate {
+        "curate"
+    } else if count >= organize
+        || entity_threshold.is_some_and(|threshold| {
+            let mut counts = BTreeMap::<String, usize>::new();
+            for document in documents {
+                for entity in document
+                    .entities
+                    .iter()
+                    .map(|entity| entity.to_ascii_lowercase())
+                    .collect::<BTreeSet<_>>()
+                {
+                    *counts.entry(entity).or_default() += 1;
+                }
+            }
+            counts.into_values().any(|count| count >= threshold)
+        })
+    {
+        "organize"
+    } else {
+        "normal"
     }
 }
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
@@ -355,6 +869,9 @@ fn split_frontmatter(markdown: &str) -> Option<(Frontmatter, String)> {
                 let key = key.trim().to_owned();
                 let value = val.trim();
                 current = None;
+                if !meta.declared_fields.insert(key.clone()) {
+                    meta.duplicate_fields.insert(key.clone());
+                }
                 if list_field(&key) {
                     let values = inline_list(value);
                     if value.is_empty() {
@@ -420,6 +937,7 @@ fn load_document(
         entities: m.lists.get("entities").cloned().unwrap_or_default(),
         aliases: m.lists.get("aliases").cloned().unwrap_or_default(),
         tags: m.lists.get("tags").cloned().unwrap_or_default(),
+        see_also: m.lists.get("see_also").cloned().unwrap_or_default(),
         source: m.scalar.get("source").cloned(),
         published_at: m.scalar.get("published_at").cloned(),
         period: m.scalar.get("period").cloned(),
@@ -429,6 +947,8 @@ fn load_document(
         content,
         body,
         read_error: frontmatter_error,
+        declared_fields: m.declared_fields,
+        duplicate_fields: m.duplicate_fields,
     })
 }
 fn unreadable_document(root: &Path, path: &Path, message: String) -> Document {
@@ -442,6 +962,7 @@ fn unreadable_document(root: &Path, path: &Path, message: String) -> Document {
         entities: vec![],
         aliases: vec![],
         tags: vec![],
+        see_also: vec![],
         source: None,
         published_at: None,
         period: None,
@@ -451,12 +972,21 @@ fn unreadable_document(root: &Path, path: &Path, message: String) -> Document {
         content: String::new(),
         body: String::new(),
         read_error: Some(format!("cannot read Markdown: {message}")),
+        declared_fields: BTreeSet::new(),
+        duplicate_fields: BTreeSet::new(),
     }
 }
 fn validate_document(doc: &Document) -> Vec<KnowledgeIssue> {
     let mut out = vec![];
     if let Some(error) = &doc.read_error {
         out.push(issue(doc, "frontmatter", error));
+    }
+    for field in &doc.duplicate_fields {
+        out.push(issue(
+            doc,
+            field,
+            "frontmatter field must be declared only once",
+        ));
     }
     for (field, value) in [
         ("id", &doc.id),
@@ -482,19 +1012,40 @@ fn validate_document(doc: &Document) -> Vec<KnowledgeIssue> {
             "evidence requires a non-empty source locator",
         ));
     }
-    for relationship in &doc.relationships {
-        let allowed = match doc.kind.as_str() {
-            "evidence" => matches!(relationship.kind.as_str(), "updates" | "contradicts"),
-            "decision" => matches!(
-                relationship.kind.as_str(),
-                "uses" | "supports" | "updates" | "contradicts"
-            ),
-            _ => false,
-        };
-        if !allowed {
+    if doc.declared_fields.contains("see_also") && doc.kind != "wiki" {
+        out.push(issue(
+            doc,
+            "see_also",
+            "see_also is permitted only for Wiki memory",
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for target in &doc.see_also {
+        if target == &doc.id {
+            out.push(issue(doc, "see_also", "must not reference itself"));
+        }
+        if !target.starts_with("wiki:") {
             out.push(issue(
                 doc,
-                &relationship.kind,
+                "see_also",
+                &format!("target must use a wiki: ID: {target}"),
+            ));
+        }
+        if !seen.insert(target) {
+            out.push(issue(
+                doc,
+                "see_also",
+                &format!("duplicate target: {target}"),
+            ));
+        }
+    }
+    for relationship in AUTHORED_RELATIONSHIP_TYPES {
+        if doc.declared_fields.contains(*relationship)
+            && !relationship_field_allowed(&doc.kind, relationship)
+        {
+            out.push(issue(
+                doc,
+                relationship,
                 "relationship is not permitted for this memory kind",
             ));
         }
@@ -506,6 +1057,17 @@ fn issue(doc: &Document, field: &str, message: &str) -> KnowledgeIssue {
         path: doc.path.clone(),
         field: field.into(),
         message: message.into(),
+    }
+}
+
+fn relationship_field_allowed(source: &str, relationship: &str) -> bool {
+    match source {
+        "evidence" => matches!(relationship, "updates" | "contradicts"),
+        "decision" => matches!(
+            relationship,
+            "uses" | "supports" | "updates" | "contradicts"
+        ),
+        _ => false,
     }
 }
 
@@ -613,7 +1175,8 @@ fn is_markdown(path: &Path) -> bool {
     )
 }
 fn list_field(key: &str) -> bool {
-    matches!(key, "entities" | "aliases" | "tags") || AUTHORED_RELATIONSHIP_TYPES.contains(&key)
+    matches!(key, "entities" | "aliases" | "tags" | "see_also")
+        || AUTHORED_RELATIONSHIP_TYPES.contains(&key)
 }
 fn inline_list(value: &str) -> Vec<String> {
     let value = clean(value);
@@ -698,6 +1261,26 @@ impl Relevance {
     fn score(self) -> i32 {
         self.tier * 1_000 + self.points.min(999)
     }
+}
+
+#[derive(Clone, Debug, Default)]
+struct ScoredField {
+    relevance: Relevance,
+    matched_terms: BTreeSet<String>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct DocumentRelevance {
+    relevance: Relevance,
+    concise_terms: BTreeSet<String>,
+    authored_anchor: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+struct SectionRelevance {
+    relevance: Relevance,
+    concise_terms: BTreeSet<String>,
+    all_terms: BTreeSet<String>,
 }
 
 fn normalize_search_text(value: &str) -> String {
@@ -798,9 +1381,9 @@ fn search_tokens(normalized: &str) -> BTreeSet<String> {
     out
 }
 
-fn field_relevance(value: &str, weight: i32, query: &SearchText, allow_compact: bool) -> Relevance {
+fn score_field(value: &str, weight: i32, query: &SearchText, allow_compact: bool) -> ScoredField {
     if value.is_empty() {
-        return Relevance::default();
+        return ScoredField::default();
     }
     let value = SearchText::new(value);
     let compact_match =
@@ -810,7 +1393,12 @@ fn field_relevance(value: &str, weight: i32, query: &SearchText, allow_compact: 
     let phrase = (query.tokens.len() > 1
         && contains_bounded_phrase(&value.normalized, &query.normalized))
         || (compact_match && value.compact.contains(&query.compact));
-    let matched = value.tokens.intersection(&query.tokens).count() as i32;
+    let mut matched_terms = value
+        .tokens
+        .intersection(&query.tokens)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let matched = matched_terms.len() as i32;
     let query_terms = query.tokens.len() as i32;
     let tier = if exact {
         4
@@ -823,47 +1411,124 @@ fn field_relevance(value: &str, weight: i32, query: &SearchText, allow_compact: 
     } else {
         0
     };
-    Relevance {
-        tier,
-        points: if tier > 0 { matched.max(1) * weight } else { 0 },
+    if compact_match && value.compact.contains(&query.compact) && matched_terms.is_empty() {
+        matched_terms.extend(query.tokens.iter().cloned());
+    }
+    ScoredField {
+        relevance: Relevance {
+            tier,
+            points: if tier > 0 { matched.max(1) * weight } else { 0 },
+        },
+        matched_terms,
     }
 }
 
-fn document_relevance(doc: &Document, query: &SearchText) -> Relevance {
-    let mut relevance = field_relevance(&doc.id, 14, query, false);
+fn add_document_field(
+    result: &mut DocumentRelevance,
+    value: &str,
+    weight: i32,
+    query: &SearchText,
+    allow_compact: bool,
+) {
+    let field = score_field(value, weight, query, allow_compact);
+    result.relevance.add(field.relevance);
+    result.concise_terms.extend(field.matched_terms);
+}
+
+fn contains_authored_anchor(value: &str, query: &SearchText) -> bool {
+    let value = normalize_search_text(value);
+    !value.is_empty()
+        && value != query.normalized
+        && contains_bounded_phrase(&query.normalized, &value)
+}
+
+fn document_relevance(doc: &Document, query: &SearchText) -> DocumentRelevance {
+    let id = score_field(&doc.id, 14, query, false);
+    let authored_anchor = contains_authored_anchor(&doc.id, query)
+        || doc
+            .aliases
+            .iter()
+            .any(|value| contains_authored_anchor(value, query))
+        || doc
+            .entities
+            .iter()
+            .any(|value| contains_authored_anchor(value, query));
+    let mut result = DocumentRelevance {
+        relevance: id.relevance,
+        concise_terms: id.matched_terms,
+        authored_anchor,
+    };
     if normalize_search_text(&doc.id) == query.normalized {
-        relevance.tier = 5;
+        result.relevance.tier = 5;
     }
-    relevance.add(field_relevance(&doc.title, 12, query, true));
+    add_document_field(&mut result, &doc.title, 12, query, true);
     for value in &doc.aliases {
-        relevance.add(field_relevance(value, 12, query, true));
+        add_document_field(&mut result, value, 12, query, true);
     }
     for value in &doc.entities {
-        relevance.add(field_relevance(value, 12, query, false));
+        add_document_field(&mut result, value, 12, query, false);
     }
     for value in &doc.tags {
-        relevance.add(field_relevance(value, 8, query, true));
+        add_document_field(&mut result, value, 8, query, true);
     }
-    relevance.add(field_relevance(
+    add_document_field(
+        &mut result,
         doc.period.as_deref().unwrap_or_default(),
         8,
         query,
         false,
-    ));
-    relevance.add(field_relevance(&doc.summary, 7, query, false));
+    );
+    add_document_field(&mut result, &doc.summary, 7, query, false);
     for relationship in &doc.relationships {
-        relevance.add(field_relevance(&relationship.target, 4, query, false));
+        add_document_field(&mut result, &relationship.target, 4, query, false);
     }
-    relevance
+    if result.authored_anchor {
+        result.relevance.tier = result.relevance.tier.max(3);
+    }
+    if !query.tokens.is_empty() && query.tokens.is_subset(&result.concise_terms) {
+        result.relevance.tier = result.relevance.tier.max(2);
+        result.relevance.points = result
+            .relevance
+            .points
+            .saturating_add(query.tokens.len() as i32 * 6);
+    }
+    result
 }
 
-fn section_relevance(section: &Section, query: &SearchText) -> Relevance {
-    field_relevance(&section.heading, 8, query, true).combined(field_relevance(
-        &section.text,
-        4,
-        query,
-        false,
-    ))
+fn section_relevance(section: &Section, query: &SearchText) -> SectionRelevance {
+    let heading = score_field(&section.heading, 8, query, true);
+    let mut body = score_field(&section.text, 4, query, false);
+    if body.relevance.tier == 4 {
+        body.relevance.tier = if query.tokens.len() > 1 { 3 } else { 1 };
+    } else if body.relevance.tier == 2 {
+        body.relevance.tier = 1;
+    }
+    let mut all_terms = heading.matched_terms.clone();
+    all_terms.extend(body.matched_terms);
+    SectionRelevance {
+        relevance: heading.relevance.combined(body.relevance),
+        concise_terms: heading.matched_terms,
+        all_terms,
+    }
+}
+
+fn combined_relevance(
+    document: &DocumentRelevance,
+    section: &SectionRelevance,
+    query: &SearchText,
+) -> Relevance {
+    let mut relevance = document.relevance.combined(section.relevance);
+    if !query.tokens.is_empty()
+        && query.tokens.iter().all(|term| {
+            document.concise_terms.contains(term) || section.concise_terms.contains(term)
+        })
+    {
+        relevance.tier = relevance.tier.max(2);
+        relevance.points = relevance
+            .points
+            .saturating_add(query.tokens.len() as i32 * 4);
+    }
+    relevance
 }
 
 fn document_sensitive_numbers(doc: &Document) -> BTreeSet<String> {
@@ -910,6 +1575,149 @@ fn search_result(doc: &Document, section: &Section, score: i32) -> SearchResult 
         relationships: doc.relationships.clone(),
         score,
         text: contextual(doc, section),
+        aliases: doc.aliases.clone(),
+        tags: doc.tags.clone(),
+        match_tier: MatchTier::Partial,
+        matched_fields: Vec::new(),
+        matched_terms: Vec::new(),
+    }
+}
+
+fn has_minimum_query_coverage(
+    relevance: Relevance,
+    document: &DocumentRelevance,
+    section: &SectionRelevance,
+    query: &SearchText,
+) -> bool {
+    query.tokens.len() <= 1
+        || document.authored_anchor
+        || relevance.tier >= 2
+        || query
+            .tokens
+            .iter()
+            .filter(|term| {
+                document.concise_terms.contains(*term) || section.all_terms.contains(*term)
+            })
+            .take(2)
+            .count()
+            >= 2
+}
+
+fn explain_match(
+    doc: &Document,
+    section: &Section,
+    query: &SearchText,
+) -> (MatchTier, Vec<String>, Vec<String>) {
+    let mut fields = BTreeSet::new();
+    let mut terms = BTreeSet::new();
+    let mut exact_metadata = false;
+    let mut phrase = false;
+    let named_fields = [
+        ("id", doc.id.as_str(), false),
+        ("title", doc.title.as_str(), true),
+        ("summary", doc.summary.as_str(), false),
+        ("period", doc.period.as_deref().unwrap_or_default(), false),
+    ];
+    for (name, value, compact) in named_fields {
+        collect_match_details(
+            name,
+            value,
+            compact,
+            query,
+            &mut fields,
+            &mut terms,
+            &mut exact_metadata,
+            &mut phrase,
+        );
+    }
+    for (name, values, compact) in [
+        ("aliases", &doc.aliases, true),
+        ("entities", &doc.entities, false),
+        ("tags", &doc.tags, true),
+    ] {
+        for value in values {
+            collect_match_details(
+                name,
+                value,
+                compact,
+                query,
+                &mut fields,
+                &mut terms,
+                &mut exact_metadata,
+                &mut phrase,
+            );
+        }
+    }
+    for relationship in &doc.relationships {
+        collect_match_details(
+            "relationships",
+            &relationship.target,
+            false,
+            query,
+            &mut fields,
+            &mut terms,
+            &mut exact_metadata,
+            &mut phrase,
+        );
+    }
+    collect_match_details(
+        "heading",
+        &section.heading,
+        true,
+        query,
+        &mut fields,
+        &mut terms,
+        &mut exact_metadata,
+        &mut phrase,
+    );
+    let concise_terms = terms.clone();
+    let mut body = score_field(&section.text, 4, query, false);
+    if body.relevance.tier == 4 {
+        body.relevance.tier = if query.tokens.len() > 1 { 3 } else { 1 };
+    } else if body.relevance.tier == 2 {
+        body.relevance.tier = 1;
+    }
+    if body.relevance.is_match() {
+        fields.insert("body".to_owned());
+        terms.extend(body.matched_terms);
+        phrase |= body.relevance.tier >= 3;
+    }
+
+    let match_tier = if normalize_search_text(&doc.id) == query.normalized {
+        MatchTier::ExactId
+    } else if exact_metadata {
+        MatchTier::ExactMetadata
+    } else if phrase {
+        MatchTier::Phrase
+    } else if !query.tokens.is_empty() && query.tokens.is_subset(&concise_terms) {
+        MatchTier::AllTerms
+    } else {
+        MatchTier::Partial
+    };
+    (
+        match_tier,
+        fields.into_iter().collect(),
+        terms.into_iter().collect(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn collect_match_details(
+    name: &str,
+    value: &str,
+    allow_compact: bool,
+    query: &SearchText,
+    fields: &mut BTreeSet<String>,
+    terms: &mut BTreeSet<String>,
+    exact_metadata: &mut bool,
+    phrase: &mut bool,
+) {
+    let field = score_field(value, 1, query, allow_compact);
+    if field.relevance.is_match() {
+        fields.insert(name.to_owned());
+        terms.extend(field.matched_terms);
+        *exact_metadata |= field.relevance.tier >= 4;
+        *phrase |= field.relevance.tier == 3;
     }
 }
 fn search_result_order(a: &SearchResult, b: &SearchResult) -> std::cmp::Ordering {
@@ -1014,11 +1822,11 @@ mod tests {
             "---\nid: evidence:cash-flow\ntitle: Cash generation\nsummary: Quarterly observation.\nas_of: 2026-07-27T09:00:00Z\nsource: https://example.com/report\nperiod: 2026-Q2\ntags:\n  - free-cash-flow\n---\n\n# Observation\nConversion improved.",
         );
 
-        let compound = search(&root, "free cash flow", None, None, 5).unwrap();
+        let compound = search_with_kinds(&root, "free cash flow", &[], None, 5).unwrap();
         assert_eq!(compound.len(), 1);
         assert_eq!(compound[0].id, "evidence:cash-flow");
 
-        let period = search(&root, "2026 Q2", None, None, 5).unwrap();
+        let period = search_with_kinds(&root, "2026 Q2", &[], None, 5).unwrap();
         assert_eq!(period.len(), 1);
         assert_eq!(period[0].id, "evidence:cash-flow");
         let _ = fs::remove_dir_all(root);
@@ -1037,7 +1845,7 @@ mod tests {
             "---\nid: wiki:newer\ntitle: Newer signal\nsummary: Cash flow signal.\nas_of: 2026-07-01T00:00:00Z\n---\n\n# First\nCash flow.\n\n# Second\nCash flow.",
         );
 
-        let results = search(&root, "cash flow signal", None, None, 10).unwrap();
+        let results = search_with_kinds(&root, "cash flow signal", &[], None, 10).unwrap();
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].id, "wiki:newer");
         assert_eq!(results[1].id, "wiki:older");

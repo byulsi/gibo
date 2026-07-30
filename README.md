@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml/badge.svg)](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml)
 ![Rust 1.82+](https://img.shields.io/badge/Rust-1.82%2B-000000?logo=rust&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.2-blue)
+![Version](https://img.shields.io/badge/version-0.0.3-blue)
 
 </div>
 
@@ -57,12 +57,15 @@ starts as `auto` and retains only small, reviewable improvements. Set it to
 ### 3. Ask naturally
 
 ```text
-$guru-research Research this investment using current sources and relevant
-project memory.
+What's changed in this investment since the last review, and does it alter the
+thesis?
 ```
 
-Pick the fitting public Skill and state what you want. No schemas or manual
-record routing are required.
+After initialization, the host selects the fitting public Skill and uses
+relevant project memory even when you do not mention Guru Maker, a Skill, or a
+memory kind. In Guru Mode `auto`, an eligible durable result is also filed as
+Wiki, Lens, Method, Evidence, or Decision without a separate save request.
+Narrow answers and transient exploration remain conversational.
 
 ## Use it naturally
 
@@ -193,6 +196,41 @@ Records stay as ordinary project-owned Markdown. See the
 [knowledge model](docs/knowledge-model.md) for schemas, relationships,
 point-in-time rules, retrieval, and Guru Mode behavior.
 
+The kinds share a small Markdown envelope but not one lifecycle. Wiki is a
+connected explanatory library; Lens is a small set of bounded
+interpretations; Method is a procedure catalog; Evidence is an append-oriented
+observation log; and Decision preserves judgment revisions.
+
+Wiki records may name a few related local Wiki IDs with `see_also`. Guru Maker
+validates those exact references and derives backlinks on demand for explicit
+one-hop navigation. It does not infer links, recurse through a graph, add Wiki
+links to the Decision Graph, rank search by backlinks, or automatically load
+neighbor content.
+
+Ordinary retrieval uses small candidate cards, then exact-reads only the
+selected records. Exact IDs, entities, and numbers remain deterministic; the
+host agent owns semantic selection. Lightweight subagent reranking remains an
+evaluation-gated host option, not recommended default behavior, until it
+improves Top-1 selection by at least five percentage points on a representative
+ambiguous holdout. No fixed router is required.
+
+In Guru Mode `auto`, an eligible memory write also keeps its immediate
+neighborhood tidy: it checks for an existing concept, uses the kind-specific
+update policy, reuses stable subject folders, and performs bounded local
+cleanup before validation. It never runs in the background or silently
+performs bulk moves, ID changes, deletion, history rewriting, Pack work, or Git
+work.
+
+Auto works from ordinary natural-language investment requests after the
+project is initialized. Material research and judgment tasks reuse targeted
+project memory first; completed work is stored only when it is independently
+useful and likely to change a later task. The host classifies the durable
+payload rather than asking the user to choose: stable explanation becomes
+Wiki, a reviewed bounded interpretation becomes Lens, a repeatable procedure
+becomes Method, a dated sourced observation becomes Evidence, and a material
+point-in-time judgment becomes Decision. Ordinary tasks normally make one
+primary memory improvement.
+
 ## Public Skills
 
 Host agents discover five public Skills:
@@ -216,16 +254,11 @@ Host agents discover five public Skills:
 ## Measured evolution
 
 Markdown records and authored relationships remain canonical. These are
-evaluation gates, not promised features: current retrieval remains
-project-scoped lexical search followed by exact-ID reads. Any derived layer
-must be rebuildable from local Markdown and ignore Pack source checkouts.
+evaluation gates, not promised features. The current retrieval remains
+project-scoped lexical candidate search followed by exact-ID reads. Any future
+derived layer must be rebuildable from local Markdown and ignore Pack source
+checkouts.
 
-- **Wiki backlinks and explicit one-hop navigation.** Only if a representative
-  corpus shows material related-memory misses or impact-analysis cost, evaluate
-  an explicit authored Wiki-reference contract and disposable reverse
-  projection. This requires a product-boundary revision and must not infer
-  edges, treat every Markdown link as a relationship, traverse automatically,
-  or load context automatically.
 - **Hybrid semantic retrieval.** Only if a labeled project corpus shows lexical
   Recall@K missing a stated target across terminology, language, or conceptual
   variation, evaluate a rebuildable semantic index as a supplement to lexical

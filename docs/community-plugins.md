@@ -35,8 +35,10 @@ element's frontmatter owns its ID, title, summary, and `as_of`.
 paths. Nested subject directories are allowed and preserved. Path escapes,
 symlinks, executable files, static payloads, undeclared files or directories,
 malformed elements, duplicate element IDs, and mixed memory kinds are invalid.
-Wiki, Lens, and Method elements may not contain structured memory
-relationships.
+Lens and Method elements may not contain structured navigation or memory
+relationships. Wiki may declare exact same-kind `see_also` navigation, and
+every target must be another declared element in the same Pack. This navigation
+does not create a Decision Graph edge or hidden context dependency.
 
 ## Installation
 
@@ -90,6 +92,8 @@ gurumaker pack check ./wiki-pack
 
 Creation copies only explicitly selected elements from the matching local
 collection and preserves each path relative to that collection. It does not
-initialize Git, commit, push, or publish.
+follow or automatically add a Wiki `see_also` target; creation fails until all
+declared targets are explicitly selected. It does not initialize Git, commit,
+push, or publish.
 Ordinary Git and GitHub operations follow only after a separate explicit user
 request.

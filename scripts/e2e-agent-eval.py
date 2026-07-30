@@ -120,6 +120,144 @@ Normalize only comparable fields and identify unresolved differences.
     ),
 }
 
+PUBLIC_SKILLS = {
+    "guru-research",
+    "guru-memory",
+    "guru-decision",
+    "guru-train",
+    "guru-packs",
+}
+VALID_WORKSPACES = {"auto", "off", "none"}
+CHECK_REQUIRED_KEYS = {
+    "event_regex": {"pattern"},
+    "event_not_regex": {"pattern"},
+    "event_command_count": {"pattern"},
+    "final_regex": {"pattern"},
+    "final_not_regex": {"pattern"},
+    "change_any": {"pattern"},
+    "change_none": {"pattern"},
+    "changed_exactly_one_matching": {"pattern"},
+    "changed_at_most_matching": {"pattern", "count"},
+    "changed_only": {"paths"},
+    "changed_content_regex": {"pattern"},
+    "changed_content_not_regex": {"pattern"},
+    "path_exists": {"path"},
+    "path_absent": {"path"},
+    "glob_min": {"glob", "count"},
+    "glob_exact": {"glob", "count"},
+    "mode_equals": {"value"},
+    "content_regex": {"path", "pattern"},
+    "content_not_regex": {"path", "pattern"},
+    "frontmatter_list_equals": {"path", "field", "values"},
+    "record_frontmatter_list_equals": {"record_id", "field", "values"},
+    "wiki_one_way_link": set(),
+    "glob_content_regex": {"glob", "pattern"},
+    "glob_content_match_count": {"glob", "pattern", "count"},
+    "initial_preserved": {"path"},
+    "knowledge_valid": set(),
+}
+REQUIRED_CASE_FIELDS = {
+    "id",
+    "title",
+    "skill",
+    "universe",
+    "intent",
+    "workspace",
+    "fixture",
+    "prompt",
+    "expected",
+    "checks",
+    "qualitative_focus",
+}
+
+
+def validate_configuration(configuration: Any) -> list[dict[str, Any]]:
+    if not isinstance(configuration, dict):
+        raise ValueError("E2E configuration must be a JSON object")
+    cases = configuration.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("E2E configuration must contain a non-empty cases list")
+
+    seen_ids: set[str] = set()
+    for index, case in enumerate(cases):
+        label = f"case at index {index}"
+        if not isinstance(case, dict):
+            raise ValueError(f"{label} must be an object")
+        missing = REQUIRED_CASE_FIELDS - set(case)
+        if missing:
+            raise ValueError(f"{label} misses fields: {', '.join(sorted(missing))}")
+
+        case_id = case["id"]
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"{label} has an invalid id")
+        if case_id in seen_ids:
+            raise ValueError(f"duplicate case id: {case_id}")
+        seen_ids.add(case_id)
+        label = case_id
+
+        for field in ("title", "universe", "intent", "fixture", "prompt", "expected"):
+            if not isinstance(case[field], str) or not case[field].strip():
+                raise ValueError(f"{label} has an empty {field}")
+        if case["skill"] not in PUBLIC_SKILLS:
+            raise ValueError(f"{label} has unknown public Skill: {case['skill']}")
+        if case["workspace"] not in VALID_WORKSPACES:
+            raise ValueError(f"{label} has invalid workspace: {case['workspace']}")
+
+        capabilities = case.get("capabilities", [])
+        if not isinstance(capabilities, list) or any(
+            capability not in CAPABILITY_SKILLS for capability in capabilities
+        ):
+            raise ValueError(f"{label} has invalid capabilities")
+
+        focus = case["qualitative_focus"]
+        if (
+            not isinstance(focus, list)
+            or not focus
+            or any(not isinstance(item, str) or not item.strip() for item in focus)
+        ):
+            raise ValueError(f"{label} needs non-empty qualitative focus")
+
+        checks = case["checks"]
+        if not isinstance(checks, list) or not checks:
+            raise ValueError(f"{label} needs at least one deterministic assertion")
+        if all(
+            isinstance(check, dict) and check.get("type") == "knowledge_valid"
+            for check in checks
+        ):
+            raise ValueError(
+                f"{label} needs an outcome assertion beyond schema validation"
+            )
+        for check_index, check in enumerate(checks):
+            if not isinstance(check, dict):
+                raise ValueError(f"{label} check {check_index} must be an object")
+            check_type = check.get("type")
+            if check_type not in CHECK_REQUIRED_KEYS:
+                raise ValueError(
+                    f"{label} check {check_index} has unknown type: {check_type}"
+                )
+            required = CHECK_REQUIRED_KEYS[check_type]
+            missing_check_keys = required - set(check)
+            if missing_check_keys:
+                raise ValueError(
+                    f"{label} check {check_index} misses: "
+                    f"{', '.join(sorted(missing_check_keys))}"
+                )
+            if "pattern" in check:
+                try:
+                    re.compile(check["pattern"])
+                except (re.error, TypeError) as error:
+                    raise ValueError(
+                        f"{label} check {check_index} has invalid regex: {error}"
+                    ) from error
+            if "count" in check and (
+                not isinstance(check["count"], int) or check["count"] < 0
+            ):
+                raise ValueError(
+                    f"{label} check {check_index} needs a non-negative count"
+                )
+
+    return cases
+
 
 def install_capability_skills(workspace: Path, names: list[str]) -> None:
     for name in names:
@@ -176,6 +314,320 @@ def pack_fixture_environment(source: Path) -> dict[str, str]:
         "GIT_CONFIG_KEY_0": f"url.{source.resolve().as_uri()}.insteadOf",
         "GIT_CONFIG_VALUE_0": PACK_FIXTURE_URL,
     }
+
+
+def seed_large_corpus(workspace: Path) -> None:
+    topics = [
+        "accounting",
+        "fixed-income",
+        "market-structure",
+        "quantum",
+        "energy",
+        "insurance",
+        "payments",
+        "supply-chain",
+        "biotechnology",
+        "portfolio-risk",
+    ]
+    entities = [
+        "ticker:ALP",
+        "ticker:BRV",
+        "ticker:CRN",
+        "ticker:DLT",
+        "ticker:EVR",
+        "ticker:FLX",
+        "ticker:GRD",
+        "ticker:HLX",
+        "ticker:ION",
+        "ticker:JDE",
+    ]
+
+    def metadata(index: int, topic: str, alias_kind: str) -> str:
+        return (
+            f"entities:\n  - {entities[index % len(entities)]}\n"
+            f"aliases:\n  - {topic}-{alias_kind}-{index:03d}\n"
+            f"tags:\n  - {topic}\n  - large-corpus"
+        )
+
+    # The generic population is deliberately broad, aliased, and noisy.
+    kind_specs = [
+        (
+            "wiki",
+            89,
+            "concept",
+            "## Concept\n\nA stable reusable domain term.\n\n"
+            "## Limits\n\nCurrent observations require separate Evidence.",
+        ),
+        (
+            "lens",
+            29,
+            "interpretation",
+            "## Assumptions and applicability\n\nApply only when the causal "
+            "conditions hold.\n\n## Failure indicators\n\nReject when the "
+            "indicator and observed outcome diverge.",
+        ),
+        (
+            "method",
+            29,
+            "workflow",
+            "## Inputs\n\nValidated observations and a cutoff.\n\n"
+            "## Procedure\n\nNormalize inputs and test a downside case.\n\n"
+            "## Outputs and limits\n\nReport assumptions and validation.",
+        ),
+    ]
+    for kind, count, label, body in kind_specs:
+        for index in range(count):
+            topic = topics[index % len(topics)]
+            write_text(
+                workspace
+                / "guru-maker"
+                / kind
+                / topic
+                / f"{label}-{index:03d}.md",
+                record(
+                    f"{kind}:large-{label}-{index:03d}",
+                    f"{topic.replace('-', ' ').title()} {label} {index:03d}",
+                    f"Reusable {topic} {label} number {index:03d}.",
+                    body,
+                    fields=metadata(index, topic, label),
+                ),
+            )
+
+    # Wiki 90: exact alias target plus 89 generic Wiki records.
+    write_text(
+        workspace
+        / "guru-maker"
+        / "wiki"
+        / "accounting"
+        / "cross-border-working-capital.md",
+        record(
+            "wiki:cross-border-working-capital",
+            "Cross-border working capital cycle",
+            "How currency, settlement, and local payment terms shape cash conversion.",
+            (
+                "## Concept\n\nCross-border working capital links cash conversion "
+                "to local payment terms, settlement timing, and currency "
+                "translation.\n\n## Research use\n\nCompare reported cycles "
+                "across currencies.\n\n## Limits\n\nThe current note does not "
+                "define which movements represent operating cash generation."
+            ),
+            fields=(
+                "aliases:\n"
+                "  - CBWC\n"
+                "  - cash conversion across currencies\n"
+                "tags:\n"
+                "  - working-capital\n"
+                "  - foreign-exchange"
+            ),
+        ),
+    )
+
+    # Lens 30: one incomplete target plus 29 generic Lenses.
+    write_text(
+        workspace
+        / "guru-maker"
+        / "lens"
+        / "infrastructure"
+        / "contracted-demand-quality.md",
+        record(
+            "lens:contracted-demand-quality",
+            "Contracted demand quality",
+            "Interpret contracted backlog before treating it as durable demand.",
+            (
+                "## Assumptions and applicability\n\nUse reported contracted "
+                "backlog as a demand signal.\n\n## Failure indicators\n\n"
+                "Reconsider when cancellations rise."
+            ),
+            fields=(
+                "aliases:\n"
+                "  - CDQ\n"
+                "  - backlog quality lens\n"
+                "tags:\n"
+                "  - infrastructure\n"
+                "  - demand-quality"
+            ),
+        ),
+    )
+
+    # Method 30: one incomplete target plus 29 generic Methods.
+    write_text(
+        workspace
+        / "guru-maker"
+        / "method"
+        / "fixed-income"
+        / "liquidity-adjusted-spread-review.md",
+        record(
+            "method:liquidity-adjusted-spread-review",
+            "Liquidity-adjusted spread review",
+            "Recurring comparison of bond spread compensation and liquidity.",
+            (
+                "## Inputs\n\nOption-adjusted spread and modified duration.\n\n"
+                "## Procedure\n\nRank bonds using raw option-adjusted spread alone."
+                "\n\n## Limits\n\nQuote depth and transaction cost are omitted."
+            ),
+            fields=(
+                "aliases:\n"
+                "  - LASR\n"
+                "  - spread after liquidity cost\n"
+                "tags:\n"
+                "  - fixed-income\n"
+                "  - liquidity"
+            ),
+        ),
+    )
+
+    # Evidence 110: three named histories plus 107 generic observations.
+    named_evidence = [
+        (
+            "orion/margin-2026-q1.md",
+            "evidence:orion-margin-2026-q1",
+            "Orion Systems 2026 Q1 operating margin",
+            "Operating margin was 18% and cost absorption was described as stable.",
+            "https://example.invalid/orion/2026-q1",
+            "2026-Q1",
+            "ticker:ORN",
+        ),
+        (
+            "helix/duration-2026-q1.md",
+            "evidence:helix-duration-2026-q1",
+            "Helix 2026 Q1 duration compensation",
+            "Spread compensation was 34 basis points per unit of modified duration with adequate depth.",
+            "https://example.invalid/helix/2026-q1",
+            "2026-Q1",
+            "ticker:HLX",
+        ),
+        (
+            "helix/duration-2026-q2.md",
+            "evidence:helix-duration-2026-q2",
+            "Helix 2026 Q2 duration compensation",
+            "Spread compensation fell to 19 basis points per unit of modified duration and depth fell below threshold.",
+            "https://example.invalid/helix/2026-q2",
+            "2026-Q2",
+            "ticker:HLX",
+        ),
+    ]
+    for path, element_id, title, observation, source, period, entity in named_evidence:
+        write_text(
+            workspace / "guru-maker" / "evidence" / path,
+            record(
+                element_id,
+                title,
+                f"Source-bound {title.lower()} observation.",
+                f"## Observation\n\n{observation}",
+                source=source,
+                fields=f"period: {period}\nentities:\n  - {entity}",
+            ),
+        )
+    for index in range(107):
+        topic = topics[index % len(topics)]
+        write_text(
+            workspace
+            / "guru-maker"
+            / "evidence"
+            / topic
+            / f"observation-{index:03d}.md",
+            record(
+                f"evidence:large-observation-{index:03d}",
+                f"{topic.replace('-', ' ').title()} observation {index:03d}",
+                f"Source-bound {topic} observation number {index:03d}.",
+                (
+                    f"## Observation\n\nThe synthetic measure was {100 + index} "
+                    "units.\n\n## Limits\n\nNo investment conclusion follows."
+                ),
+                source=(
+                    "https://example.invalid/large-corpus/evidence/"
+                    f"{index:03d}"
+                ),
+                fields=(
+                    f"period: 2025-Q{index % 4 + 1}\n"
+                    + metadata(index, topic, "observation")
+                ),
+            ),
+        )
+
+    # Decision 45: an original and challenger plus 43 unrelated histories.
+    write_text(
+        workspace
+        / "guru-maker"
+        / "decision"
+        / "helix"
+        / "duration-original.md",
+        record(
+            "decision:helix-duration-original",
+            "Original Helix duration overweight",
+            "Earlier judgment to maintain the Helix bond overweight.",
+            (
+                "## Decision\n\nMaintain the overweight while spread compensation "
+                "and quote depth remain adequate.\n\n## Invalidation\n\nReduce "
+                "exposure if either falls below the portfolio threshold."
+            ),
+            fields=(
+                "entities:\n"
+                "  - ticker:HLX\n"
+                "supports:\n"
+                "  - evidence:helix-duration-2026-q1"
+            ),
+        ),
+    )
+    write_text(
+        workspace
+        / "guru-maker"
+        / "decision"
+        / "helix"
+        / "duration-challenger.md",
+        record(
+            "decision:helix-duration-challenger",
+            "Helix duration overweight challenger",
+            "Later challenge after spread compression and weaker liquidity.",
+            (
+                "## Decision\n\nPrefer a reduction until compensation or depth "
+                "recovers.\n\n## Invalidation\n\nReconsider if both recover."
+            ),
+            fields=(
+                "entities:\n"
+                "  - ticker:HLX\n"
+                "supports:\n"
+                "  - evidence:helix-duration-2026-q2\n"
+                "contradicts:\n"
+                "  - decision:helix-duration-original"
+            ),
+        ),
+    )
+    for index in range(43):
+        write_text(
+            workspace
+            / "guru-maker"
+            / "decision"
+            / "archive"
+            / f"allocation-{index:03d}.md",
+            record(
+                f"decision:large-allocation-{index:03d}",
+                f"Historical allocation judgment {index:03d}",
+                f"Point-in-time allocation judgment number {index:03d}.",
+                (
+                    "## Decision\n\nMaintain a bounded allocation.\n\n"
+                    "## Invalidation\n\nReassess when evidence changes."
+                ),
+                fields=(
+                    f"entities:\n  - {entities[index % len(entities)]}\n"
+                    "supports:\n"
+                    f"  - evidence:large-observation-{index:03d}"
+                ),
+            ),
+        )
+
+    write_text(
+        workspace / "sources" / "orion-q2-update.md",
+        """# Orion Systems 2026 Q2 reviewed update
+
+- Source: https://example.invalid/orion/2026-q2
+- Period: 2026-Q2
+- Entity: ticker:ORN
+- Observation: operating margin fell to 11% from 18% in Q1.
+- Management explanation: transition costs exceeded the earlier absorption plan.
+- Scope: this contradicts the earlier margin-stability observation but is not an allocation judgment.
+""",
+    )
 
 
 def seed_fixture(name: str, workspace: Path) -> Path | None:
@@ -355,6 +807,92 @@ above it. No transaction-cost or intraday data is supplied.
                 "## Procedure\n\nUse Macaulay duration directly as the first-order price sensitivity measure.\n\n## Limits\n\nRevisit the convention when yield and compounding assumptions differ.",
             ),
         )
+    elif name == "wiki_neighborhood":
+        wiki_records = [
+            (
+                "logical-qubits.md",
+                "wiki:logical-qubits",
+                "Logical qubits",
+                "A logical unit used in fault-tolerant quantum computation.",
+                "## Concept\n\nA logical qubit encodes quantum information.",
+            ),
+            (
+                "surface-code.md",
+                "wiki:surface-code",
+                "Surface code",
+                "A family of topological quantum error-correction schemes.",
+                "## Concept\n\nSurface code uses repeated stabilizer measurements.",
+            ),
+            (
+                "physical-qubits.md",
+                "wiki:physical-qubits",
+                "Physical qubits",
+                "Hardware-level quantum information carriers.",
+                "## Concept\n\nPhysical qubits are exposed to device noise.",
+            ),
+            (
+                "syndrome-measurement.md",
+                "wiki:syndrome-measurement",
+                "Syndrome measurement",
+                "Indirect detection of quantum errors.",
+                "## Concept\n\nSyndromes reveal errors without reading logical state.",
+            ),
+            (
+                "code-distance.md",
+                "wiki:code-distance",
+                "Code distance",
+                "A measure of error-correcting code protection.",
+                "## Concept\n\nDistance bounds the number of correctable errors.",
+            ),
+            (
+                "fault-tolerance.md",
+                "wiki:fault-tolerance",
+                "Fault tolerance",
+                "Reliable computation with imperfect components.",
+                "## Concept\n\nFault-tolerant operations limit error propagation.",
+            ),
+            (
+                "decoherence.md",
+                "wiki:decoherence",
+                "Decoherence",
+                "Loss of quantum-state coherence through environmental coupling.",
+                "## Concept\n\nDecoherence constrains physical operation fidelity.",
+            ),
+        ]
+        for filename, memory_id, title, summary, body in wiki_records:
+            write_text(
+                workspace / "guru-maker" / "wiki" / "quantum" / filename,
+                record(memory_id, title, summary, body),
+            )
+    elif name == "wiki_linked_neighborhood":
+        write_text(
+            workspace / "guru-maker" / "wiki" / "quantum" / "logical-qubits.md",
+            record(
+                "wiki:logical-qubits",
+                "Logical qubits",
+                "Error-corrected units built from physical qubits.",
+                "## Concept\n\nA logical qubit protects encoded quantum information.\n\n## Limits\n\nResource overhead depends on the error-correction scheme and hardware error rates.",
+                fields="see_also:\n  - wiki:surface-code",
+            ),
+        )
+        write_text(
+            workspace / "guru-maker" / "wiki" / "quantum" / "surface-code.md",
+            record(
+                "wiki:surface-code",
+                "Surface code",
+                "A topological quantum error-correction scheme.",
+                "## Concept\n\nRepeated stabilizer measurements detect local errors.",
+            ),
+        )
+        write_text(
+            workspace / "guru-maker" / "wiki" / "quantum" / "decoherence.md",
+            record(
+                "wiki:decoherence",
+                "Decoherence",
+                "Loss of quantum-state coherence through environmental coupling.",
+                "## Concept\n\nDecoherence constrains physical operation fidelity.",
+            ),
+        )
     elif name == "municipal_source":
         write_text(
             sources / "muni-notice.md",
@@ -375,6 +913,29 @@ above it. No transaction-cost or intraday data is supplied.
                 "Interprets price increases together with volume and mix.",
                 "## Lens\n\nNominal price gains are weak evidence of pricing power when unit volumes fall and mix shifts are unresolved.\n\n## Applicability and limits\n\nTest elasticity, customer retention, competitor response, and cost inflation. Temporary capacity constraints can make falling volume non-causal.",
             ),
+        )
+    elif name == "evidence_revision":
+        write_text(
+            workspace / "guru-maker" / "evidence" / "margin-old.md",
+            record(
+                "evidence:example-margin-old",
+                "Example issuer margin observation",
+                "Earlier fictional operating-margin observation.",
+                "## Observation\n\nOperating margin was 18% in 2026-Q1.",
+                source="https://example.invalid/issuer/q1",
+                fields="period: 2026-Q1\nentities:\n  - ticker:EXMPL",
+            ),
+        )
+        write_text(
+            sources / "margin-update.md",
+            """# Reviewed fictional issuer update
+
+- Source: https://example.invalid/issuer/q2
+- Period: 2026-Q2
+- Entity: ticker:EXMPL
+- Observation: operating margin fell to 9%, contradicting the earlier stability observation.
+- Scope: supplied evaluation fixture; no investment judgment is requested.
+""",
         )
     elif name == "equity_decision":
         write_text(
@@ -561,6 +1122,8 @@ screen, invalidation point, and cost assumptions before entry.
         )
     elif name in {"pack_available", "pack_installed", "pack_installed_modified"}:
         pack_source = create_pack_source(workspace)
+    elif name == "large_corpus":
+        seed_large_corpus(workspace)
     elif name == "mixed_pack_elements":
         write_text(
             workspace / "guru-maker" / "wiki" / "valuation.md",
@@ -580,6 +1143,26 @@ screen, invalidation point, and cost assumptions before entry.
                 "## Procedure\n\nNormalize cash flow, claims, and share count.\n\n## Limits\n\nRefresh prices and estimates.",
             ),
         )
+    elif name == "wiki_pack_open_link":
+        write_text(
+            workspace / "guru-maker" / "wiki" / "source.md",
+            record(
+                "wiki:pack-source",
+                "Pack source concept",
+                "A reusable concept whose navigation target is separate.",
+                "## Concept\n\nThe source remains independently intelligible.",
+                fields="see_also:\n  - wiki:pack-target",
+            ),
+        )
+        write_text(
+            workspace / "guru-maker" / "wiki" / "target.md",
+            record(
+                "wiki:pack-target",
+                "Pack target concept",
+                "The local target of authored Wiki navigation.",
+                "## Concept\n\nThe target remains independently intelligible.",
+            ),
+        )
     else:
         raise ValueError(f"unknown fixture: {name}")
 
@@ -596,6 +1179,23 @@ def snapshot(workspace: Path) -> dict[str, str]:
         if relative.name.startswith(".e2e-") or not path.is_file():
             continue
         result[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return result
+
+
+def snapshot_agent_assets(workspace: Path) -> dict[str, str]:
+    result: dict[str, str] = {}
+    roots = [
+        workspace / ".agents" / "skills",
+        workspace / ".agents" / "shared" / "gurumaker",
+        workspace / ".agents" / "runtime",
+    ]
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("*")):
+            if path.is_file():
+                relative = path.relative_to(workspace).as_posix()
+                result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
     return result
 
 
@@ -626,6 +1226,26 @@ def extract_commands(events: str) -> list[str]:
     return commands
 
 
+def extract_successful_commands(events: str) -> list[str]:
+    commands: list[str] = []
+    for line in events.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        item = event.get("item", {})
+        command = item.get("command")
+        if (
+            event.get("type") == "item.completed"
+            and item.get("type") == "command_execution"
+            and item.get("exit_code") == 0
+            and isinstance(command, str)
+            and command not in commands
+        ):
+            commands.append(command)
+    return commands
+
+
 def extract_non_shell_tools(events: str) -> list[dict[str, Any]]:
     tools: list[dict[str, Any]] = []
     for line in events.splitlines():
@@ -649,6 +1269,49 @@ def extract_non_shell_tools(events: str) -> list[dict[str, Any]]:
     return tools
 
 
+def disabled_user_skill_config(codex_home: Path) -> str | None:
+    skills_root = codex_home / "skills"
+    if not skills_root.is_dir():
+        return None
+    paths = sorted(
+        child / "SKILL.md"
+        for child in skills_root.iterdir()
+        if child.name != ".system" and (child / "SKILL.md").is_file()
+    )
+    if not paths:
+        return None
+    entries = ",".join(
+        f"{{path={json.dumps(str(path.absolute()))},enabled=false}}"
+        for path in paths
+    )
+    return f"skills.config=[{entries}]"
+
+
+def external_guru_reads(commands: list[str], workspace: Path) -> list[str]:
+    allowed_roots = [
+        (workspace / ".agents" / "skills").resolve(),
+        (workspace / ".agents" / "shared" / "gurumaker").resolve(),
+    ]
+    found: set[str] = set()
+    pattern = re.compile(r"(?<![A-Za-z0-9._-])/[^\s'\";|&<>]+")
+    for command in commands:
+        for matched in pattern.findall(command):
+            if not (
+                matched.endswith("/SKILL.md")
+                or "/shared/gurumaker/" in matched
+                or "/.codex/skills/" in matched
+                or "/.codex/plugins/" in matched
+            ):
+                continue
+            candidate = Path(matched)
+            if not any(
+                candidate.resolve().is_relative_to(allowed_root)
+                for allowed_root in allowed_roots
+            ):
+                found.add(matched)
+    return sorted(found)
+
+
 def expand_glob(pattern: str) -> list[str]:
     match = re.search(r"\{([^{}]+)\}", pattern)
     if not match:
@@ -657,6 +1320,65 @@ def expand_glob(pattern: str) -> list[str]:
         pattern[: match.start()] + option + pattern[match.end() :]
         for option in match.group(1).split(",")
     ]
+
+
+def frontmatter_list(path: Path, field: str) -> list[str]:
+    if not path.is_file():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return []
+    frontmatter: list[str] = []
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        frontmatter.append(line)
+    for index, line in enumerate(frontmatter):
+        match = re.fullmatch(rf"{re.escape(field)}:\s*(.*)", line)
+        if not match:
+            continue
+        inline = match.group(1).strip()
+        if inline.startswith("[") and inline.endswith("]"):
+            return [
+                value.strip().strip("'\"")
+                for value in inline[1:-1].split(",")
+                if value.strip()
+            ]
+        values: list[str] = []
+        for child in frontmatter[index + 1 :]:
+            item = re.fullmatch(r"\s+-\s+(.+?)\s*", child)
+            if item:
+                values.append(item.group(1).strip().strip("'\""))
+                continue
+            if child.startswith((" ", "\t")) or not child.strip():
+                continue
+            break
+        return values
+    return []
+
+
+def frontmatter_scalar(path: Path, field: str) -> str | None:
+    if not path.is_file():
+        return None
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        match = re.fullmatch(rf"{re.escape(field)}:\s*(.+?)\s*", line)
+        if match:
+            return match.group(1).strip().strip("'\"")
+    return None
+
+
+def record_path(workspace: Path, record_id: str) -> Path | None:
+    matches: list[Path] = []
+    id_pattern = re.compile(rf"(?m)^id:\s*{re.escape(record_id)}\s*$")
+    for path in workspace.glob("guru-maker/**/*.md"):
+        if path.is_file() and id_pattern.search(path.read_text(encoding="utf-8")):
+            matches.append(path)
+    return matches[0] if len(matches) == 1 else None
 
 
 def evaluate_check(
@@ -672,12 +1394,27 @@ def evaluate_check(
 ) -> tuple[bool, str]:
     check_type = check["type"]
     flags = re.IGNORECASE | re.DOTALL
-    commands = "\n".join(extract_commands(events))
+    commands = extract_commands(events)
+    successful_commands = extract_successful_commands(events)
 
     if check_type == "event_regex":
-        ok = re.search(check["pattern"], commands, flags) is not None
+        ok = any(
+            re.search(check["pattern"], command, flags)
+            for command in successful_commands
+        )
     elif check_type == "event_not_regex":
-        ok = re.search(check["pattern"], commands, flags) is None
+        ok = not any(
+            re.search(check["pattern"], command, flags) for command in commands
+        )
+    elif check_type == "event_command_count":
+        matching = [
+            command
+            for command in successful_commands
+            if re.search(check["pattern"], command, flags)
+        ]
+        minimum = check.get("min", 0)
+        maximum = check.get("max", len(successful_commands))
+        ok = minimum <= len(matching) <= maximum
     elif check_type == "final_regex":
         ok = re.search(check["pattern"], final, flags) is not None
     elif check_type == "final_not_regex":
@@ -691,6 +1428,11 @@ def evaluate_check(
             path for path in changes if re.search(check["pattern"], path, flags)
         ]
         ok = len(matching) == 1
+    elif check_type == "changed_at_most_matching":
+        matching = [
+            path for path in changes if re.search(check["pattern"], path, flags)
+        ]
+        ok = len(matching) <= check["count"]
     elif check_type == "changed_only":
         ok = set(changes) == set(check["paths"])
     elif check_type == "changed_content_regex":
@@ -710,6 +1452,23 @@ def evaluate_check(
             is not None
             for path in matching_files
         )
+    elif check_type == "changed_content_not_regex":
+        path_pattern = check.get("path_pattern", ".*")
+        matching_files = [
+            workspace / path
+            for path in changes
+            if re.search(path_pattern, path, flags)
+            and (workspace / path).is_file()
+        ]
+        ok = bool(matching_files) and all(
+            re.search(
+                check["pattern"],
+                path.read_text(encoding="utf-8"),
+                flags,
+            )
+            is None
+            for path in matching_files
+        )
     elif check_type == "path_exists":
         ok = (workspace / check["path"]).exists()
     elif check_type == "path_absent":
@@ -722,6 +1481,14 @@ def evaluate_check(
             if path.exists()
         ]
         ok = len(matched) >= check["count"]
+    elif check_type == "glob_exact":
+        matched = {
+            path
+            for pattern in expand_glob(check["glob"])
+            for path in workspace.glob(pattern)
+            if path.exists()
+        }
+        ok = len(matched) == check["count"]
     elif check_type == "mode_equals":
         mode_path = workspace / ".guru-maker" / "mode"
         ok = mode_path.is_file() and mode_path.read_text(encoding="utf-8").strip() == check["value"]
@@ -730,6 +1497,42 @@ def evaluate_check(
         ok = path.is_file() and re.search(
             check["pattern"], path.read_text(encoding="utf-8"), flags
         ) is not None
+    elif check_type == "content_not_regex":
+        path = workspace / check["path"]
+        ok = path.is_file() and re.search(
+            check["pattern"], path.read_text(encoding="utf-8"), flags
+        ) is None
+    elif check_type == "frontmatter_list_equals":
+        actual = frontmatter_list(workspace / check["path"], check["field"])
+        ok = actual == check["values"]
+    elif check_type == "record_frontmatter_list_equals":
+        path = record_path(workspace, check["record_id"])
+        ok = path is not None and frontmatter_list(path, check["field"]) == check["values"]
+    elif check_type == "wiki_one_way_link":
+        wiki_paths = sorted(
+            path
+            for path in workspace.glob("guru-maker/wiki/**/*.md")
+            if path.is_file()
+        )
+        records = [
+            (
+                frontmatter_scalar(path, "id"),
+                frontmatter_list(path, "see_also"),
+            )
+            for path in wiki_paths
+        ]
+        ok = (
+            len(records) == 2
+            and all(record_id is not None for record_id, _ in records)
+            and sum(
+                links == [other_id]
+                for index, (_, links) in enumerate(records)
+                for other_index, (other_id, _) in enumerate(records)
+                if index != other_index
+            )
+            == 1
+            and sum(not links for _, links in records) == 1
+        )
     elif check_type == "glob_content_regex":
         matched_files: list[Path] = []
         for pattern in expand_glob(check["glob"]):
@@ -738,6 +1541,23 @@ def evaluate_check(
             re.search(check["pattern"], path.read_text(encoding="utf-8"), flags)
             for path in matched_files
         )
+    elif check_type == "glob_content_match_count":
+        matched_files = {
+            path
+            for pattern in expand_glob(check["glob"])
+            for path in workspace.glob(pattern)
+            if path.is_file()
+        }
+        content_matches = [
+            path
+            for path in matched_files
+            if re.search(
+                check["pattern"],
+                path.read_text(encoding="utf-8"),
+                flags,
+            )
+        ]
+        ok = len(content_matches) == check["count"]
     elif check_type == "initial_preserved":
         path = check["path"]
         ok = path in before and path in after and before[path] == after[path]
@@ -844,7 +1664,19 @@ def run_case_in_directory(
     workspace, before, prompt, fixture_environment = prepare_case(
         case, case_dir, runtime
     )
+    agent_assets_before = snapshot_agent_assets(workspace)
     final_path = workspace / ".e2e-final.txt"
+    user_home = Path(os.environ.get("HOME", str(Path.home())))
+    source_codex_home = Path(
+        os.environ.get("CODEX_HOME", str(user_home / ".codex"))
+    )
+    isolated_codex_home = case_dir / "codex-home"
+    isolated_codex_home.mkdir()
+    source_auth = source_codex_home / "auth.json"
+    if source_auth.is_file():
+        isolated_auth = isolated_codex_home / "auth.json"
+        shutil.copy2(source_auth, isolated_auth)
+        isolated_auth.chmod(0o600)
     command = [
         "codex",
         "exec",
@@ -867,8 +1699,21 @@ def run_case_in_directory(
         str(final_path),
         prompt,
     ]
+    if skill_config := disabled_user_skill_config(source_codex_home):
+        command[1:1] = ["-c", skill_config]
     environment = os.environ.copy()
     environment.update(fixture_environment)
+    isolated_agent_home = case_dir / "agent-home"
+    isolated_agent_home.mkdir()
+    environment.update(
+        {
+            "HOME": str(isolated_agent_home),
+            "CODEX_HOME": str(isolated_codex_home),
+            "XDG_CACHE_HOME": str(isolated_agent_home / ".cache"),
+            "XDG_CONFIG_HOME": str(isolated_agent_home / ".config"),
+            "XDG_DATA_HOME": str(isolated_agent_home / ".local" / "share"),
+        }
+    )
 
     return_code = 124
     events = ""
@@ -903,7 +1748,9 @@ def run_case_in_directory(
         else ""
     )
     after = snapshot(workspace)
+    agent_assets_after = snapshot_agent_assets(workspace)
     changes = changed_paths(before, after)
+    commands = extract_commands(events)
     check_results: list[dict[str, Any]] = []
     for check in case["checks"]:
         ok, detail = evaluate_check(
@@ -917,6 +1764,34 @@ def run_case_in_directory(
             runtime=runtime,
         )
         check_results.append({"passed": ok, "check": check, "detail": detail})
+    external_reads = external_guru_reads(commands, workspace)
+    check_results.append(
+        {
+            "passed": not external_reads,
+            "check": {"type": "project_local_skill_isolation"},
+            "detail": (
+                "all accessed Skills and Guru references were project-local"
+                if not external_reads
+                else f"external Guru reads: {', '.join(external_reads)}"
+            ),
+        }
+    )
+    agent_asset_changes = changed_paths(agent_assets_before, agent_assets_after)
+    check_results.append(
+        {
+            "passed": not agent_asset_changes,
+            "check": {"type": "project_local_contract_integrity"},
+            "detail": (
+                "project-local Skills, shared contracts, and Runtime were preserved"
+                if not agent_asset_changes
+                else "modified project-local agent assets: "
+                + ", ".join(
+                    f"{path} ({change})"
+                    for path, change in agent_asset_changes.items()
+                )
+            ),
+        }
+    )
 
     deterministic_pass = (
         return_code == 0
@@ -954,7 +1829,7 @@ def run_case_in_directory(
         "checks": check_results,
         "changed_paths": changes,
         "artifact_contents": artifact_contents,
-        "commands": extract_commands(events),
+        "commands": commands,
         "non_shell_tools": extract_non_shell_tools(events),
         "final": final,
         "_events": events,
@@ -1013,7 +1888,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     configuration = json.loads(args.cases_file.read_text(encoding="utf-8"))
-    cases = configuration["cases"]
+    cases = validate_configuration(configuration)
     if args.case_ids:
         selected = set(args.case_ids)
         cases = [case for case in cases if case["id"] in selected]

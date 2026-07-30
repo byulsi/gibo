@@ -120,4 +120,68 @@ for workspace in "$WORKSPACE_A" "$WORKSPACE_B"; do
         fail "workspace initialization created pack content: $workspace"
 done
 
+WIKI_A="$WORKSPACE_B/guru-maker/wiki/logical-qubits.md"
+WIKI_B="$WORKSPACE_B/guru-maker/wiki/surface-code.md"
+printf '%s\n' \
+    '---' \
+    'id: wiki:logical-qubits' \
+    'title: Logical qubits' \
+    'summary: Explains the error-corrected unit used by quantum algorithms.' \
+    'as_of: 2026-07-30T09:00:00+09:00' \
+    'aliases: [logical qubit]' \
+    'tags: [quantum-computing]' \
+    'see_also: [wiki:surface-code]' \
+    '---' \
+    '' \
+    '# Error correction' \
+    '' \
+    'A logical qubit is encoded across physical qubits.' >"$WIKI_A"
+printf '%s\n' \
+    '---' \
+    'id: wiki:surface-code' \
+    'title: Surface code' \
+    'summary: Describes a family of quantum error-correction schemes.' \
+    'as_of: 2026-07-30T09:00:00+09:00' \
+    'tags: [quantum-computing]' \
+    '---' \
+    '' \
+    '# Mechanism' \
+    '' \
+    'Local checks detect errors without measuring the encoded state.' >"$WIKI_B"
+
+run_wrapper knowledge search 'logical qubits' \
+    --kind wiki --kind method --candidates --limit 6 \
+    --workspace "$WORKSPACE_B" --json |
+    python3 -c '
+import json, sys
+items = json.load(sys.stdin)
+assert items and items[0]["id"] == "wiki:logical-qubits"
+assert "text" not in items[0]
+assert items[0]["match_tier"] == "exact_metadata"
+'
+run_wrapper knowledge neighbors wiki:logical-qubits \
+    --workspace "$WORKSPACE_B" --json |
+    python3 -c '
+import json, sys
+result = json.load(sys.stdin)
+assert [item["id"] for item in result["outgoing"]] == ["wiki:surface-code"]
+assert result["incoming"] == []
+'
+run_wrapper knowledge neighbors wiki:surface-code \
+    --workspace "$WORKSPACE_B" --json |
+    python3 -c '
+import json, sys
+result = json.load(sys.stdin)
+assert [item["id"] for item in result["incoming"]] == ["wiki:logical-qubits"]
+'
+run_wrapper knowledge health --kind wiki --workspace "$WORKSPACE_B" --json |
+    python3 -c '
+import json, sys
+health = json.load(sys.stdin)["kinds"]
+assert len(health) == 1
+assert health[0]["kind"] == "wiki"
+assert health[0]["documents"] == 2
+'
+run_wrapper knowledge check --workspace "$WORKSPACE_B" >/dev/null
+
 printf 'Isolated Runtime test passed (%s)\n' "$TEST_ROOT"

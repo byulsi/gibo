@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.3 - 2026-07-30
+
+- Add stable-ID Wiki `see_also` navigation, deterministic backlinks and
+  one-hop neighbor cards, plus closed-link validation for Wiki Packs.
+- Add compact explained search candidates, repeated kind filters, and
+  read-only collection health advisories while preserving exact-ID, numeric,
+  and project-scoped retrieval authority.
+- Teach the five public Skills to route ordinary natural-language work into
+  bounded, kind-specific Auto curation without requiring users to name Guru
+  Maker, while host agents continue to own research strategy and judgment.
+- Add 67 Korean, English, short-form, and large-corpus Codex CLI scenarios
+  covering save, reuse, stable updates, append-only Evidence and Decision
+  lineage, plus labeled retrieval-quality and performance evaluations.
+
 ## 0.0.2 - 2026-07-30
 
 - Improve deterministic knowledge search with stronger exact and metadata

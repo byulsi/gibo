@@ -82,6 +82,8 @@ fn knowledge_command(arguments: &[String]) -> Result<(), String> {
         "search" => knowledge_search(rest),
         "read" => knowledge_read(rest),
         "check" => knowledge_check(rest),
+        "neighbors" => knowledge_neighbors(rest),
+        "health" => knowledge_health(rest),
         other => Err(format!("unknown knowledge command: {other}")),
     }
 }
@@ -150,9 +152,14 @@ fn knowledge_list(arguments: &[String]) -> Result<(), String> {
 }
 
 fn knowledge_search(arguments: &[String]) -> Result<(), String> {
-    let parsed = Options::parse(arguments, &["json", "workspace", "kind", "entity", "limit"])?;
-    let query = one_positional(&parsed, "usage: gurumaker knowledge search <query> [--kind KIND] [--entity ID] [--limit N] [--workspace PATH] [--json]")?;
+    let parsed = Options::parse_repeatable(
+        arguments,
+        &["json", "workspace", "kind", "entity", "limit", "candidates"],
+        &["kind"],
+    )?;
+    let query = one_positional(&parsed, "usage: gurumaker knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]")?;
     let root = PathBuf::from(parsed.value("workspace").unwrap_or("."));
+    let kinds = parsed.values("kind");
     let limit = parsed
         .value("limit")
         .map(|value| {
@@ -162,13 +169,36 @@ fn knowledge_search(arguments: &[String]) -> Result<(), String> {
         })
         .transpose()?
         .unwrap_or(8);
-    let results = knowledge::search(
-        &root,
-        query,
-        parsed.value("kind"),
-        parsed.value("entity"),
-        limit,
-    )?;
+    if parsed.has_flag("candidates") {
+        let results = knowledge::search_candidates_with_kinds(
+            &root,
+            query,
+            &kinds,
+            parsed.value("entity"),
+            limit,
+        )?;
+        if parsed.json {
+            return emit(&results, true, None);
+        }
+        if results.is_empty() {
+            println!("No matching Guru Maker knowledge records found.");
+            return Ok(());
+        }
+        for result in results {
+            println!(
+                "{}\t{}\t{}\t{}\t{}",
+                result.score,
+                result.id,
+                result.match_tier.as_str(),
+                result.section,
+                result.title
+            );
+            println!("{}", result.summary);
+        }
+        return Ok(());
+    }
+    let results =
+        knowledge::search_with_kinds(&root, query, &kinds, parsed.value("entity"), limit)?;
     if parsed.json {
         emit(&results, true, None)
     } else if results.is_empty() {
@@ -195,6 +225,57 @@ fn knowledge_search(arguments: &[String]) -> Result<(), String> {
                 );
             }
             println!("{}", result.text);
+        }
+        Ok(())
+    }
+}
+
+fn knowledge_neighbors(arguments: &[String]) -> Result<(), String> {
+    let parsed = Options::parse(arguments, &["json", "workspace"])?;
+    let id = one_positional(
+        &parsed,
+        "usage: gurumaker knowledge neighbors <wiki-id> [--workspace PATH] [--json]",
+    )?;
+    let result =
+        knowledge::neighbors(&PathBuf::from(parsed.value("workspace").unwrap_or(".")), id)?;
+    if parsed.json {
+        emit(&result, true, None)
+    } else {
+        println!(
+            "{}\t{}\t{}",
+            result.document.id, result.document.as_of, result.document.title
+        );
+        for document in result.outgoing {
+            println!("outgoing\t{}\t{}", document.id, document.title);
+        }
+        for document in result.incoming {
+            println!("incoming\t{}\t{}", document.id, document.title);
+        }
+        Ok(())
+    }
+}
+
+fn knowledge_health(arguments: &[String]) -> Result<(), String> {
+    let parsed = Options::parse(arguments, &["json", "workspace", "kind"])?;
+    no_positionals(
+        &parsed,
+        "usage: gurumaker knowledge health [--kind KIND] [--workspace PATH] [--json]",
+    )?;
+    let result = knowledge::health(
+        &PathBuf::from(parsed.value("workspace").unwrap_or(".")),
+        parsed.value("kind"),
+    )?;
+    if parsed.json {
+        emit(&result, true, None)
+    } else {
+        for health in result.kinds {
+            println!(
+                "{}\t{}\t{}\t{}\t{}",
+                health.kind, health.documents, health.folders, health.max_depth, health.review_band
+            );
+            for advisory in health.advisories {
+                println!("advisory\t{}\t{}", advisory.code, advisory.ids.join("\t"));
+            }
         }
         Ok(())
     }
@@ -475,13 +556,23 @@ fn emit<T: Serialize>(value: &T, json: bool, message: Option<String>) -> Result<
 struct Options {
     positionals: Vec<String>,
     named: Vec<(String, String)>,
+    flags: Vec<String>,
     json: bool,
 }
 
 impl Options {
     fn parse(arguments: &[String], allowed: &[&str]) -> Result<Self, String> {
+        Self::parse_repeatable(arguments, allowed, &["element"])
+    }
+
+    fn parse_repeatable(
+        arguments: &[String],
+        allowed: &[&str],
+        repeatable: &[&str],
+    ) -> Result<Self, String> {
         let mut positionals = Vec::new();
         let mut named = Vec::new();
+        let mut flags = Vec::new();
         let mut json = false;
         let mut index = 0;
         while index < arguments.len() {
@@ -491,11 +582,17 @@ impl Options {
                     return Err("--json may be supplied only once".into());
                 }
                 json = true;
+            } else if argument == "--candidates" {
+                if !allowed.contains(&"candidates") || flags.iter().any(|flag| flag == "candidates")
+                {
+                    return Err("--candidates may be supplied only once".into());
+                }
+                flags.push("candidates".into());
             } else if let Some(name) = argument.strip_prefix("--") {
                 if !allowed.contains(&name) {
                     return Err(format!("unknown option: {argument}"));
                 }
-                if name != "element" && named.iter().any(|(key, _)| key == name) {
+                if !repeatable.contains(&name) && named.iter().any(|(key, _)| key == name) {
                     return Err(format!("{argument} may be supplied only once"));
                 }
                 index += 1;
@@ -514,6 +611,7 @@ impl Options {
         Ok(Self {
             positionals,
             named,
+            flags,
             json,
         })
     }
@@ -530,6 +628,9 @@ impl Options {
             .filter(|(key, _)| key == name)
             .map(|(_, value)| value.clone())
             .collect()
+    }
+    fn has_flag(&self, name: &str) -> bool {
+        self.flags.iter().any(|flag| flag == name)
     }
 }
 
@@ -551,7 +652,7 @@ fn no_positionals(options: &Options, usage: &str) -> Result<(), String> {
 
 fn print_help() {
     println!(
-        "gurumaker {}\n\nUSAGE:\n    gurumaker init [workspace] [--json]\n    gurumaker mode [auto|off] [--workspace PATH] [--json]\n    gurumaker knowledge <list|search|read|check> ...\n    gurumaker graph [workspace] [--output PATH] [--json]\n    gurumaker pack <install|list|inspect|update|remove|create|check> ...",
+        "gurumaker {}\n\nUSAGE:\n    gurumaker init [workspace] [--json]\n    gurumaker mode [auto|off] [--workspace PATH] [--json]\n    gurumaker knowledge <list|search|read|check|neighbors|health> ...\n    gurumaker graph [workspace] [--output PATH] [--json]\n    gurumaker pack <install|list|inspect|update|remove|create|check> ...",
         env!("CARGO_PKG_VERSION")
     );
 }
@@ -585,6 +686,6 @@ fn print_pack_command_help(command: &str) -> Result<(), String> {
 
 fn print_knowledge_help() {
     println!(
-        "Knowledge commands:\n    gurumaker knowledge search <query> [--kind KIND] [--entity ID] [--limit N] [--workspace PATH] [--json]\n    gurumaker knowledge read <id> [--section NAME] [--workspace PATH] [--json]\n    gurumaker knowledge list [--kind KIND] [--workspace PATH] [--json]\n    gurumaker knowledge check [--workspace PATH] [--json]"
+        "Knowledge commands:\n    gurumaker knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]\n    gurumaker knowledge read <id> [--section NAME] [--workspace PATH] [--json]\n    gurumaker knowledge list [--kind KIND] [--workspace PATH] [--json]\n    gurumaker knowledge check [--workspace PATH] [--json]\n    gurumaker knowledge neighbors <wiki-id> [--workspace PATH] [--json]\n    gurumaker knowledge health [--kind KIND] [--workspace PATH] [--json]"
     );
 }

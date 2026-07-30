@@ -127,17 +127,47 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     let research = fs::read_to_string(skills_root.join("guru-research/SKILL.md")).unwrap();
     assert!(research.contains("Evidence"));
     assert!(research.contains("Wiki"));
-    assert!(research.contains("new, refreshed, or user-supplied"));
-    assert!(research.contains("regardless of asset class or analytical method"));
-    assert!(research.contains("user-supplied point-in-time external evidence or data"));
+    assert!(research.contains(
+        "material natural-language investment or financial research in an initialized Guru Maker project"
+    ));
+    assert!(research.contains("another research capability supplies the domain procedure"));
+    assert!(research.contains("user does not mention Guru Maker or saving"));
+    assert!(research.contains("supplied-source capture without refresh or analysis"));
+    assert!(research.contains("wait for a separate save request"));
+    assert!(research.contains("every material research task in an initialized project"));
+    assert!(research.contains("Host agents and specialized capabilities own research strategy"));
+    assert!(research.contains("do not act as an agent or tool\nrouter"));
+    assert!(research.contains("Never filesystem-read a `guru-maker/` record"));
+    assert!(research.contains("Guru Mode `off` or a\nno-write instruction does not disable"));
     assert!(research.contains("../../shared/gurumaker/references/guru-mode.md"));
     assert!(research.contains("../../shared/gurumaker/references/research-capabilities.md"));
+    let research_capabilities = normalized("shared/gurumaker/references/research-capabilities.md");
+    for required in [
+        "not a research router",
+        "project-memory retrieval",
+        "mode-gated retention boundaries",
+        "the host agent owns question framing, research strategy, tool selection",
+        "evidence evaluation, normalization, synthesis",
+    ] {
+        assert!(
+            research_capabilities.contains(required),
+            "research capability boundary misses {required}"
+        );
+    }
 
     let memory = fs::read_to_string(skills_root.join("guru-memory/SKILL.md")).unwrap();
     assert!(memory.contains("Wiki, Lens, Evidence, and Method"));
-    assert!(memory.contains("Initialize, recall, or maintain"));
+    assert!(memory.contains("Recall or maintain"));
     assert!(memory.contains("analysis of supplied point-in-time external evidence or data"));
-    assert!(memory.contains("does not apply to workspace `init`"));
+    assert!(memory.contains("pre-write search does not apply to workspace"));
+    assert!(memory.contains("repeating the\nunchanged query is not a reformulation"));
+    assert!(memory.contains("Use automatically"));
+    assert!(memory.contains("does not mention Guru Maker, a Skill, or saving"));
+    assert!(memory.contains("require the user to name Guru Maker"));
+    assert!(memory.contains("short follow-up that clearly refers to saved investment memory"));
+    assert!(memory.contains("rendering the Decision Graph"));
+    assert!(memory.contains("Never run `rg`, `grep`, `find`, `ls`, `cat`, `sed`"));
+    assert!(memory.contains("a no-match is not evidence"));
     assert!(memory.contains("../../shared/gurumaker/references/guru-mode.md"));
 
     let decision = fs::read_to_string(skills_root.join("guru-decision/SKILL.md")).unwrap();
@@ -153,7 +183,15 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(decision.contains("not a recursive inventory of the workspace"));
     assert!(decision.contains("Every record under"));
     assert!(decision.contains("even if the prompt calls it supplied, current"));
+    assert!(decision.contains("Use automatically"));
+    assert!(decision.contains("does not mention Guru Maker or a Skill"));
+    assert!(decision.contains("every requested material judgment in an initialized project"));
+    assert!(decision.contains("casual explanation or open-ended exploration"));
     assert!(decision.contains("../../shared/gurumaker/references/guru-mode.md"));
+    assert!(
+        decision.contains("route any write through the fitting Memory, Research, or Train Skill")
+    );
+    assert!(decision.contains("not write it through Decision"));
 
     let execution_brief = normalized("shared/gurumaker/references/execution-brief.md");
     assert!(execution_brief.contains("outside `guru-maker/`"));
@@ -172,6 +210,8 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
             "training contract misses {boundary}"
         );
     }
+    assert!(training_contract.contains("One anecdote cannot establish a universal causal rule"));
+    assert!(training_contract.contains("do not silently replace it with a safer counter-rule"));
 
     let packs = normalized("skills/guru-packs/SKILL.md");
     assert!(packs.contains("data-only"));
@@ -184,6 +224,35 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
 
     let train = fs::read_to_string(skills_root.join("guru-train/SKILL.md")).unwrap();
     assert!(train.contains("../../shared/gurumaker/references/guru-mode.md"));
+    assert!(train.contains("never invoke this Skill implicitly"));
+    assert!(train.contains("read that smallest supplied artifact"));
+    assert!(packs.contains("never invoke Pack work implicitly"));
+
+    for skill in [
+        "guru-memory",
+        "guru-research",
+        "guru-decision",
+        "guru-train",
+    ] {
+        let content = fs::read_to_string(skills_root.join(skill).join("SKILL.md")).unwrap();
+        assert!(
+            content.contains("../../shared/gurumaker/references/curation.md"),
+            "{skill} must load the shared curation contract before writing"
+        );
+    }
+    for skill in [
+        "guru-memory",
+        "guru-research",
+        "guru-decision",
+        "guru-train",
+        "guru-packs",
+    ] {
+        let content = fs::read_to_string(skills_root.join(skill).join("SKILL.md")).unwrap();
+        assert!(
+            content.contains("Never substitute a user-global `.codex` path"),
+            "{skill} must keep shared references co-located with its loaded Skill"
+        );
+    }
 }
 
 #[test]
@@ -194,13 +263,30 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         "adjacent transfer",
         "reformulation",
         "exact ID",
+        "compact-candidate query",
+        "Repeated `--kind` values are an OR filter",
+        "one reusable-concept query",
+        "at most six candidate cards",
+        "no record body",
+        "lightweight subagent",
+        "at least a 5 percentage-point",
+        "Top-1 selection improvement",
+        "knowledge neighbors",
+        "Do not recurse",
         "Do not enumerate the memory tree",
         "only project-memory read interface",
         "not a recursive inventory of the workspace",
         "even when a prompt calls it supplied, current, or Evidence",
+        "translate the same concept once into the likely",
+        "Do not repeat the unchanged query",
         "visited IDs",
+        "within two searches total and one to three pre-write exact reads",
+        "do not exact-read the just-written record",
         "`updates`",
         "`contradicts`",
+        "every material research task or requested judgment",
+        "one compact target query",
+        "narrow fact",
     ] {
         assert!(
             retrieval.contains(required),
@@ -294,12 +380,36 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
     assert!(matrix.get("reasoning_effort").is_none());
 
     let cases = matrix["cases"].as_array().unwrap();
-    assert_eq!(cases.len(), 30);
+    assert!(
+        cases.len() >= 67,
+        "E2E matrix must keep at least 67 realistic prompts"
+    );
     let ids = cases
         .iter()
         .map(|case| case["id"].as_str().unwrap())
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(ids.len(), 30);
+    assert_eq!(ids.len(), cases.len());
+
+    assert!(
+        cases
+            .iter()
+            .filter(|case| case["prompt"]
+                .as_str()
+                .is_some_and(|prompt| prompt.chars().any(|ch| ('가'..='힣').contains(&ch))))
+            .count()
+            >= 10,
+        "E2E matrix needs substantial Korean coverage"
+    );
+    assert!(
+        cases
+            .iter()
+            .filter(|case| case["prompt"]
+                .as_str()
+                .is_some_and(|prompt| !prompt.to_ascii_lowercase().contains("guru")))
+            .count()
+            >= 20,
+        "E2E matrix needs natural requests without Guru invocation"
+    );
 
     for skill in [
         "guru-research",
@@ -321,6 +431,171 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
             >= 3
     );
     assert_eq!(matrix["qualitative_rubric"].as_array().unwrap().len(), 5);
+    let linked_wiki = cases.iter().find(|case| case["id"] == "M31").unwrap();
+    assert!(linked_wiki["prompt"].as_str().unwrap().contains("see_also"));
+    assert!(linked_wiki["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["type"] == "wiki_one_way_link"));
+    assert!(linked_wiki["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["pattern"]
+            .as_str()
+            .is_some_and(|pattern| pattern.contains("knowledge health"))));
+    for case_id in ["M32", "M33", "M34", "P35"] {
+        assert!(
+            cases.iter().any(|case| case["id"] == case_id),
+            "E2E matrix misses {case_id}"
+        );
+    }
+    let auto_budget = cases.iter().find(|case| case["id"] == "M32").unwrap();
+    assert!(!auto_budget["prompt"].as_str().unwrap().contains("see_also"));
+    assert!(auto_budget["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| { check["type"] == "changed_at_most_matching" && check["count"] == 5 }));
+    assert!(auto_budget["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["record_id"] == "wiki:logical-qubits"));
+    let lens_dedup = cases.iter().find(|case| case["id"] == "M33").unwrap();
+    assert!(lens_dedup["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["type"] == "glob_exact" && check["count"] == 1));
+    let evidence_lineage = cases.iter().find(|case| case["id"] == "M34").unwrap();
+    assert!(evidence_lineage["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["pattern"]
+            .as_str()
+            .is_some_and(|pattern| pattern.contains("contradicts"))));
+    let pack_closure = cases.iter().find(|case| case["id"] == "P35").unwrap();
+    assert!(pack_closure["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["type"] == "path_absent" && check["path"] == "linked-pack"));
+
+    let natural_research = cases.iter().find(|case| case["id"] == "I57").unwrap();
+    let natural_research_prompt = natural_research["prompt"].as_str().unwrap().to_lowercase();
+    for cue in ["guru", "skill", "save", "remember", "retain", "record"] {
+        assert!(
+            !natural_research_prompt.contains(cue),
+            "I57 leaks explicit cue {cue}"
+        );
+    }
+    assert!(natural_research["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["type"] == "changed_exactly_one_matching"
+            && check["pattern"]
+                .as_str()
+                .is_some_and(|pattern| pattern.contains("evidence"))));
+
+    let natural_decision = cases.iter().find(|case| case["id"] == "I58").unwrap();
+    let natural_decision_prompt = natural_decision["prompt"].as_str().unwrap().to_lowercase();
+    for cue in ["guru", "skill", "저장", "기억", "기록"] {
+        assert!(
+            !natural_decision_prompt.contains(cue),
+            "I58 leaks explicit cue {cue}"
+        );
+    }
+    assert!(natural_decision["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["type"] == "changed_exactly_one_matching"
+            && check["pattern"]
+                .as_str()
+                .is_some_and(|pattern| pattern.contains("decision"))));
+
+    for (case_id, kind, operation) in [
+        ("I59", "wiki", "use"),
+        ("I60", "method", "update"),
+        ("I61", "evidence", "append"),
+        ("I62", "decision", "append"),
+        ("I63", "wiki", "update"),
+        ("I64", "lens", "update"),
+        ("I67", "wiki", "korean-use"),
+    ] {
+        let case = cases.iter().find(|case| case["id"] == case_id).unwrap();
+        assert_eq!(case["fixture"], "large_corpus");
+        assert!(
+            case["checks"].as_array().unwrap().iter().any(|check| {
+                check["glob"]
+                    .as_str()
+                    .is_some_and(|glob| glob.contains(&format!("guru-maker/{kind}")))
+                    || check["pattern"]
+                        .as_str()
+                        .is_some_and(|pattern| pattern.contains(&format!("guru-maker/{kind}")))
+                    || check["path"]
+                        .as_str()
+                        .is_some_and(|path| path.contains(&format!("guru-maker/{kind}")))
+            }),
+            "large-corpus {kind} {operation} case lacks a kind-specific assertion"
+        );
+        let checks = case["checks"].as_array().unwrap();
+        assert!(
+            checks
+                .iter()
+                .any(|check| check["type"] == "event_command_count"
+                    && check["pattern"] == "knowledge read"
+                    && check["max"].as_u64().is_some_and(|max| max <= 3)),
+            "large-corpus {kind} {operation} case lacks a bounded exact-read assertion"
+        );
+    }
+
+    for (case_id, kind) in [
+        ("I40", "wiki"),
+        ("I55", "method"),
+        ("I56", "lens"),
+        ("I57", "evidence"),
+        ("I58", "decision"),
+    ] {
+        let case = cases.iter().find(|case| case["id"] == case_id).unwrap();
+        let checks = case["checks"].as_array().unwrap();
+        assert!(
+            checks.iter().any(|check| {
+                check["type"] == "changed_exactly_one_matching"
+                    && check["pattern"]
+                        .as_str()
+                        .is_some_and(|pattern| pattern.contains(kind))
+            }),
+            "{case_id} must prove exactly one {kind} write"
+        );
+        assert!(
+            checks.iter().any(|check| {
+                check["type"] == "event_regex"
+                    && check["pattern"].as_str().is_some_and(|pattern| {
+                        pattern.contains("knowledge search")
+                            && pattern.contains("--candidates")
+                            && pattern.contains("--limit 6")
+                    })
+            }),
+            "{case_id} must prove bounded pre-write candidate search"
+        );
+        assert!(checks.iter().any(|check| {
+            check["type"] == "event_regex"
+                && check["pattern"]
+                    .as_str()
+                    .is_some_and(|pattern| pattern.contains("knowledge health"))
+        }));
+        assert!(checks.iter().any(|check| {
+            check["type"] == "event_regex"
+                && check["pattern"]
+                    .as_str()
+                    .is_some_and(|pattern| pattern.contains("knowledge check"))
+        }));
+    }
 
     let harness = normalized("scripts/e2e-agent-eval.py");
     for required in [
@@ -329,10 +604,28 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
         "model_reasoning_effort",
         "GURU_MAKER_E2E_MODEL",
         "tempfile.mkdtemp",
+        "isolated_agent_home",
+        "isolated_codex_home",
+        "\"XDG_CONFIG_HOME\"",
+        "disabled_user_skill_config",
+        "skills.config=[",
+        "external_guru_reads",
+        "project_local_skill_isolation",
+        "snapshot_agent_assets",
+        "project_local_contract_integrity",
         "strict E2E isolation requires --jobs 1",
         "qualitative_review_status",
         "artifact_contents",
         "changed_content_regex",
+        "changed_content_not_regex",
+        "changed_at_most_matching",
+        "event_command_count",
+        "extract_successful_commands",
+        "record_frontmatter_list_equals",
+        "wiki_one_way_link",
+        "glob_exact",
+        "glob_content_match_count",
+        "validate_configuration",
     ] {
         assert!(
             harness.contains(required),
@@ -348,6 +641,10 @@ fn record_and_pack_context_boundaries_are_explicit() {
         "information horizon",
         "reproducible derived result",
         "`aliases`, `entities`, or `tags`",
+        "central tag registry",
+        "`see_also`",
+        "Wiki-only",
+        "Obsidian-style `[[filename]]` links are not canonical",
         "source-transcription",
         "reusable for investment research, analysis, risk, or decision-making",
         "personal or presentation preference does not qualify",
@@ -373,7 +670,7 @@ fn record_and_pack_context_boundaries_are_explicit() {
 }
 
 #[test]
-fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
+fn wiki_authoring_is_llm_friendly_and_linked_without_becoming_a_graph() {
     let records = normalized("shared/gurumaker/references/record-contract.md");
     for required in [
         "science, technology, industry",
@@ -385,8 +682,11 @@ fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
         "general encyclopedia dump",
         "experimental result, benchmark result",
         "time-sensitive state in Evidence with provenance and a cutoff",
-        "Pack creation does not follow or validate them",
-        "do not create graph edges or automatically load context",
+        "`see_also` is optional and Wiki-only",
+        "Runtime derives incoming backlinks",
+        "does not create a Decision Graph edge",
+        "A Wiki Pack must include every exact `see_also` target",
+        "never follows or automatically adds a target",
     ] {
         assert!(
             records.contains(required),
@@ -402,8 +702,11 @@ fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
         "lexical retrieval section boundaries",
         "avoid line-start ATX-like comment lines inside fenced examples",
         "provenance and a cutoff",
-        "do not create edges",
-        "Pack creation neither follows nor validates them",
+        "incoming backlinks",
+        "does not affect search score",
+        "appear in the Decision Graph",
+        "Wiki Pack must declare every `see_also` target",
+        "Obsidian-style `[[filename]]` links are not canonical",
     ] {
         assert!(
             knowledge_model.contains(required),
@@ -439,6 +742,8 @@ fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
         "Shallow subject folders are optional organization",
         "independently intelligible retrieval sections",
         "automatic context expansion",
+        "derived backlinks",
+        "navigation, not analytical relationships",
     ] {
         assert!(
             architecture.contains(required),
@@ -448,15 +753,19 @@ fn wiki_authoring_is_llm_friendly_without_becoming_a_graph() {
 }
 
 #[test]
-fn future_retrieval_roadmap_is_measured_and_non_operative() {
+fn linked_wiki_is_current_while_semantic_retrieval_remains_measured() {
     let readme = normalized("README.md");
     for required in [
+        "Wiki records may name a few related local Wiki IDs with `see_also`",
+        "derives backlinks on demand",
+        "does not infer links",
+        "automatically load neighbor content",
+        "not recommended default behavior",
+        "at least five percentage points",
         "evaluation gates, not promised features",
-        "current retrieval remains project-scoped lexical search followed by exact-ID reads",
+        "current retrieval remains project-scoped lexical candidate search followed by exact-ID reads",
         "rebuildable from local Markdown",
         "ignore Pack source checkouts",
-        "explicit authored Wiki-reference contract",
-        "must not infer edges",
         "Embeddings or a vector store require an explicit revision",
         "without unacceptable precision, context-token, latency, or migration cost",
     ] {
@@ -470,6 +779,9 @@ fn guru_mode_is_default_auto_and_explicitly_bounded() {
     for required in [
         "`auto` is the default",
         "minimum sufficient memory change",
+        "no more than five existing local",
+        "Run `knowledge health`",
+        "must not change IDs",
         "Separate write authorization from memory eligibility",
         "presentation defaults",
         "In `off`",
@@ -479,6 +791,9 @@ fn guru_mode_is_default_auto_and_explicitly_bounded() {
         "Guru Packs",
         "Git",
         "external execution",
+        "never names Guru Maker",
+        "does not need to mention Guru Maker",
+        "already initialized project",
     ] {
         assert!(
             mode.contains(required),
@@ -509,6 +824,65 @@ fn guru_mode_is_default_auto_and_explicitly_bounded() {
             "documented Guru Mode misses {required}"
         );
     }
+}
+
+#[test]
+fn in_task_curation_is_kind_specific_bounded_and_host_owned() {
+    let curation = normalized("shared/gurumaker/references/curation.md");
+    for required in [
+        "host-owned semantic work",
+        "not a background process",
+        "compact candidates",
+        "no more than five existing records",
+        "knowledge health --kind",
+        "one knowledge check",
+        "path returned on its candidate card",
+        "standalone Runtime invocation",
+        "**Wiki** is a connected library",
+        "**Lens** is a small library",
+        "**Method** is a catalog",
+        "**Evidence** is append-oriented",
+        "author the exact `updates` or `contradicts` relationship",
+        "**Decision** preserves judgment history",
+        "at least four elements",
+        "no more than two subject levels",
+        "central tag registry",
+        "separate keywords field",
+        "must not change IDs",
+        "delete or merge records",
+        "installed Pack source checkouts",
+        "first show a plan and the affected IDs",
+        "scheduled cleanup",
+        "Classify the durable payload",
+        "Stable explanatory fact",
+        "Source- or calculation-bound observation",
+        "Prefer one primary memory improvement",
+        "must not generalize from one observation alone",
+        "Casual explanation or open-ended exploration",
+        "entity match alone does not authorize unrelated cleanup",
+        "Rejecting an ineligible requested memory does not authorize",
+        "before any workspace inventory or Guru Maker command",
+        "do not run another search, list, or exact read",
+    ] {
+        assert!(
+            curation.contains(required),
+            "curation contract misses {required}"
+        );
+    }
+
+    let mode = normalized("shared/gurumaker/references/guru-mode.md");
+    assert!(
+        mode.contains("An explicit write authorizes the requested record, not adjacent cleanup")
+    );
+    assert!(mode.contains(
+        "the five-record cap applies to incidental Auto curation, not to an explicitly reviewed scope"
+    ));
+
+    let architecture = normalized("docs/architecture.md");
+    assert!(architecture.contains(
+        "common Markdown envelope but intentionally have different structures and lifecycles"
+    ));
+    assert!(architecture.contains("no more than five existing local records"));
 }
 
 #[test]

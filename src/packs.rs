@@ -106,6 +106,7 @@ pub fn validate_manifest(root: &Path) -> Result<PackManifest, String> {
 
     let mut paths = HashSet::new();
     let mut ids = HashSet::new();
+    let mut wiki_links = Vec::new();
     for (index, element) in manifest.elements.iter().enumerate() {
         validate_element_name(element).map_err(|error| format!("elements[{index}] {error}"))?;
         if !paths.insert(element) {
@@ -125,6 +126,18 @@ pub fn validate_manifest(root: &Path) -> Result<PackManifest, String> {
                 "elements[{index}] duplicates element id {:?}",
                 document.id
             ));
+        }
+        if manifest.kind == "wiki" {
+            wiki_links.push((index, element, document.see_also));
+        }
+    }
+    for (index, element, targets) in wiki_links {
+        for target in targets {
+            if !ids.contains(&target) {
+                return Err(format!(
+                    "elements[{index}] {element}: see_also target is not included in this Wiki Pack: {target}"
+                ));
+            }
         }
     }
 

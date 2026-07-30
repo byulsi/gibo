@@ -1,10 +1,12 @@
 # Research capability composition
 
-Guru Research coordinates investment research; it does not replace every
-domain procedure. Infer the evidence, data, method, and output the question
-requires, then inspect the research skills, tools, and data connectors available
-in the current host. Combine the smallest useful set of specialized
-capabilities that materially improves the work.
+Guru Research supplies the project-memory and retention contract alongside
+host-owned investment research; it is not a research router or a replacement
+for domain procedures. The host infers the evidence, data, method, and output
+the question requires, then inspects the research skills, tools, and data
+connectors available in the current environment. The host combines the
+smallest useful set of specialized capabilities that materially improves the
+work.
 
 Honor a user-specified capability when it fits the request. Availability alone
 is not a reason to invoke a capability, and one specialized capability does not
@@ -17,11 +19,12 @@ Divide responsibilities clearly:
 
 - the specialized capability owns its domain procedure, such as filing
   retrieval, market-data access, transformation, calculation, or backtesting;
-- Guru Research owns question framing, project-memory retrieval, evidence
-  evaluation, normalization, synthesis, uncertainty, and mode-gated retention;
-  and
-- the host agent owns tool selection, permissions, delegation, and final
-  judgment.
+- Guru Research contributes project-memory retrieval, stale-memory treatment,
+  provenance and cutoff requirements for retained records, and mode-gated
+  retention boundaries; and
+- the host agent owns question framing, research strategy, tool selection,
+  permissions, delegation, evidence evaluation, normalization, synthesis,
+  uncertainty, and final judgment.
 
 Reuse adequate project evidence or already collected output instead of
 repeating the same retrieval. Add an independent source or method only when it

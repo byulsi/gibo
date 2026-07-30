@@ -66,6 +66,26 @@ fn search(root: &Path, query: &str) -> Vec<serde_json::Value> {
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
+fn candidate_search(root: &Path, query: &str) -> Vec<serde_json::Value> {
+    let output = command(&[
+        "knowledge",
+        "search",
+        query,
+        "--workspace",
+        root.to_str().unwrap(),
+        "--limit",
+        "50",
+        "--candidates",
+        "--json",
+    ]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).unwrap()
+}
+
 fn result<'a>(results: &'a [serde_json::Value], id: &str) -> Option<&'a serde_json::Value> {
     results.iter().find(|item| item["id"] == id)
 }
@@ -310,6 +330,102 @@ fn precision_numeric_and_multilingual_regression() {
     ]);
     assert!(!blank.status.success());
     assert!(String::from_utf8_lossy(&blank.stderr).contains("query must not be empty"));
+
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn authored_anchors_recover_verbose_queries_without_loosening_precision() {
+    let root = temp_dir("authored-anchor");
+    assert!(command(&["init", root.to_str().unwrap()]).status.success());
+
+    write_record(
+        &root,
+        "wiki",
+        "wiki:cash-before-working-capital",
+        "Cash before working capital",
+        "Explains recurring operating conversion before working-capital movements.",
+        "entities: [NYSE:ACME]\naliases: [CBWC]\n",
+        "# Interpretation\n\nCurrency translation effects are separated from recurring conversion.",
+    );
+    write_record(
+        &root,
+        "wiki",
+        "wiki:translation-review",
+        "Currency translation cash generation review",
+        "Reviews cash generation after currency translation effects.",
+        "",
+        "# Review\n\nTranslation and cash generation are compared.",
+    );
+    write_record(
+        &root,
+        "wiki",
+        "wiki:body-only",
+        "Inventory cycle notes",
+        "Describes a conventional inventory cycle.",
+        "",
+        "# Detail\n\nCash appears once in an otherwise unrelated body.",
+    );
+    write_record(
+        &root,
+        "wiki",
+        "wiki:model-infrastructure-anchor",
+        "Model infrastructure",
+        "Describes accelerator deployment.",
+        "aliases: [AI]\n",
+        "# Capacity\n\nAccelerator clusters are expanding.",
+    );
+    write_record(
+        &root,
+        "wiki",
+        "wiki:positive-margin-anchor",
+        "Positive margin observation",
+        "The observed margin change was +5.0%.",
+        "aliases: [MARGIN]\n",
+        "# Observation\n\nThe reported change was positive.",
+    );
+
+    let korean = candidate_search(&root, "CBWC 환산 효과 현금 창출");
+    let korean_target = result(&korean, "wiki:cash-before-working-capital").unwrap();
+    assert_eq!(korean[0]["id"], "wiki:cash-before-working-capital");
+    assert_eq!(korean_target["section"], "");
+    assert_eq!(korean_target["match_tier"], "partial");
+    assert!(korean_target["matched_fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|field| field == "aliases"));
+
+    let verbose = candidate_search(&root, "CBWC currency translation effect cash generation");
+    assert_eq!(verbose[0]["id"], "wiki:cash-before-working-capital");
+    assert_eq!(verbose[0]["section"], "");
+    assert_eq!(verbose[0]["match_tier"], "partial");
+
+    for query in [
+        "Please revisit wiki:cash-before-working-capital before the meeting",
+        "What changed for NYSE:ACME after the release",
+    ] {
+        let candidates = candidate_search(&root, query);
+        assert_eq!(candidates[0]["id"], "wiki:cash-before-working-capital");
+        assert_eq!(candidates[0]["section"], "");
+        assert_eq!(candidates[0]["match_tier"], "partial");
+    }
+
+    assert!(result(
+        &search(&root, "please explain cash tornado"),
+        "wiki:body-only"
+    )
+    .is_none());
+    assert!(result(
+        &search(&root, "paid subscriber discussion"),
+        "wiki:model-infrastructure-anchor"
+    )
+    .is_none());
+    assert!(result(
+        &search(&root, "MARGIN changed -5.0%"),
+        "wiki:positive-margin-anchor"
+    )
+    .is_none());
 
     fs::remove_dir_all(root).unwrap();
 }

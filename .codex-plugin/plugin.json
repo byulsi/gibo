@@ -1,7 +1,7 @@
 {
   "name": "guru-maker",
-  "version": "0.0.2",
-  "description": "Five skills to remember decisions, re-test assumptions, and grow project-owned investment knowledge.",
+  "version": "0.0.3",
+  "description": "Five skills that automatically reuse and grow project-owned investment memory from matching natural-language tasks.",
   "author": {
     "name": "monarchjuno"
   },
@@ -11,8 +11,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Guru Maker",
-    "shortDescription": "Five skills for investment memory and decisions",
-    "longDescription": "Research, remember, decide, train, and share while re-testing prior assumptions.",
+    "shortDescription": "Automatic, project-owned investment memory",
+    "longDescription": "Ask naturally to research, remember, decide, train, and share while re-testing prior assumptions.",
     "developerName": "monarchjuno",
     "category": "Productivity",
     "capabilities": ["Investment research", "Project memory", "Decision records", "Deliberate training", "Guru Packs", "Memory guardrails"],

@@ -33,7 +33,7 @@ only the directory it created with `mktemp`.
 
 ## Model-backed agent E2E
 
-The opt-in agent evaluation uses the 30-case matrix in `tests/e2e/cases.json`
+The opt-in agent evaluation uses the 67-case matrix in `tests/e2e/cases.json`
 with a maintainer-selected Codex model. It is intentionally separate from
 `scripts/verify.sh` because it is slower, stochastic, and requires model
 access. The public matrix defines behavior and failure criteria, not a
@@ -61,10 +61,16 @@ turn a stochastic baseline into a product contract.
 
 Strict isolation requires sequential execution. Each agent receives a fresh
 temporary workspace outside the checkout and a copied Runtime binary. The
-workspace is removed before the next case starts; final text, commands, changed
-paths, and small text artifacts are retained in process memory and written to
-an external results directory only after all agents finish. Keep expected
-behavior and failure checks outside the agent workspace.
+workspace and temporary `HOME`/XDG directories are removed before the next
+case starts. Only the existing `CODEX_HOME` authentication location is
+preserved. Non-system Skills found directly under that home are disabled by
+exact path, never by shared name, and any command that reads a `SKILL.md`
+outside the copied project-local Skill root fails the case. This prevents
+user-global or older installed Skills from satisfying a case in place of the
+worktree version without mutating the user's installation. Final text,
+commands, changed paths, and small text artifacts are retained in process
+memory and written to an external results directory only after all agents
+finish. Keep expected behavior and failure checks outside the agent workspace.
 
 Review the deterministic result together with the five qualitative dimensions
 in the matrix. A passing regex or file check does not excuse incorrect

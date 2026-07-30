@@ -14,8 +14,10 @@ codex plugin marketplace add monarchjuno/guru-maker
 codex plugin add guru-maker@monarchjuno
 ```
 
-Start a new task so the public Skills are discovered. Invoke the fitting Skill
-explicitly or make a matching natural-language request:
+Start a new task so the public Skills are discovered. After initialization,
+ask normally: the host selects the fitting Skill from the request even when it
+does not mention Guru Maker, a Skill, or a memory kind. Explicit invocation
+remains available:
 
 - `$guru-research` to refresh external evidence using relevant local project
   memory and suitable host-available research skills, tools, or data
@@ -91,9 +93,16 @@ or in Claude Code:
 Guru Maker then creates `guru-maker/` and `.guru-maker/` in the selected
 project. It records Guru Mode `auto` in `.guru-maker/mode`.
 
-`auto` lets the agent make minimum, durable, reviewable memory improvements
-during ordinary work in that initialized project. To require an explicit
-request for every memory change:
+`auto` lets the agent use relevant memory and make minimum, durable, reviewable
+memory improvements during ordinary natural-language work in that initialized
+project. The user does not need to ask separately to save the result or choose
+Wiki, Lens, Method, Evidence, or Decision. For an eligible write, the agent
+first checks compact candidates, applies the memory kind's own update policy,
+and may tidy only the immediate matching neighborhood before one final
+validation. Wiki can maintain exact `see_also` navigation and Guru Maker
+derives backlinks when requested. This is bounded in-task work, not a
+background organizer or automatic whole-project rewrite. To require an
+explicit request for every memory change:
 
 ```text
 $guru-memory Turn Guru Mode off for this project.
@@ -109,10 +118,25 @@ gurumaker mode auto
 
 Changing the stored mode always requires an explicit request. Auto does not
 initialize a project, capture every conversation, or authorize Pack, Git, or
-external execution actions.
+external execution actions. It also does not change stable IDs, delete or merge
+records, rewrite historical Evidence or Decisions, migrate all tags, or
+perform bulk folder moves.
 Guru Mode controls write authorization, not memory eligibility. Personal or
 presentation preferences remain outside investment memory unless reviewed as a
 repeatable analytical Method with applicability and limits.
+
+Users do not need to run maintenance commands during ordinary work. The agent
+uses the deterministic Runtime interfaces when needed:
+
+```bash
+gurumaker knowledge search "duration risk" --kind method --kind lens --candidates --limit 6
+gurumaker knowledge neighbors wiki:quantum-error-correction
+gurumaker knowledge health --kind wiki
+```
+
+Candidate search omits record bodies until the agent selects an exact ID.
+Neighbors are one-hop Wiki navigation only, and health produces advisory
+review signals rather than changing files.
 
 ## Hook activation
 
@@ -190,7 +214,8 @@ source slot and local collection, stores the exact Git source under
 `.guru-maker/packs/<kind>/`, and seeds `guru-maker/<kind>/` once. The source
 remains read-only. Search and analysis use only the local copy, which may
 evolve independently. Updating or removing the source never changes local
-memory.
+memory. A Wiki Pack must declare every exact `see_also` target used by its
+elements; validation does not follow or automatically add missing targets.
 
 ## Manual Runtime installation
 
