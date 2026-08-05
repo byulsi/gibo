@@ -8,6 +8,7 @@ and packs—over one shared Runtime bundle.
 
 - [Product direction and architecture](architecture.md)
 - [Knowledge model and retrieval](knowledge-model.md)
+- [Retrieval scaling and memory lifecycle](retrieval-scaling.md)
 - [Guru Pack contract](community-plugins.md)
 - [Decision memory and graph](decision-memory.md)
 - [Execution handoff](external-execution.md)

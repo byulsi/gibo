@@ -8,12 +8,15 @@ use std::{
     fs,
     path::{Path, PathBuf},
     sync::OnceLock,
+    thread,
 };
 
 pub const RELATIONSHIP_TYPES: &[&str] = &["uses", "supports", "contradicts", "updates"];
 const AUTHORED_RELATIONSHIP_TYPES: &[&str] =
     &["uses", "supports", "contradicts", "updates", "related"];
 pub const KNOWLEDGE_KINDS: &[&str] = &["lens", "wiki", "evidence", "method", "decision"];
+const PARALLEL_SCAN_MIN_FILES: usize = 256;
+const MAX_SCAN_WORKERS: usize = 8;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Frontmatter {
@@ -251,99 +254,239 @@ fn search_internal(
     if !(1..=50).contains(&limit) {
         return Err("knowledge search limit must be between 1 and 50".into());
     }
-    let docs = catalog_local(root);
+    let paths = local_markdown_files_for_kinds(root, kinds);
     let query = SearchText::new(query.trim());
-    let wanted_entity = entity.map(str::to_ascii_lowercase);
-    let mut out = Vec::new();
-    for doc in docs {
-        if (!kinds.is_empty() && !kinds.iter().any(|kind| kind == &doc.kind))
-            || wanted_entity
-                .as_ref()
-                .is_some_and(|e| !doc.entities.iter().any(|x| x.eq_ignore_ascii_case(e)))
-        {
-            continue;
+    let out = search_paths(root, &paths, &query, entity, limit, explain)?;
+    Ok(finalize_search_results(out, limit))
+}
+
+fn search_paths(
+    root: &Path,
+    paths: &[PathBuf],
+    query: &SearchText,
+    entity: Option<&str>,
+    limit: usize,
+    explain: bool,
+) -> Result<Vec<SearchResult>, String> {
+    Ok(scan_chunks(paths, "search", |chunk| {
+        search_chunk(root, chunk, query, entity, limit, explain)
+    })?
+    .into_iter()
+    .flatten()
+    .collect())
+}
+
+#[cfg(test)]
+fn search_paths_with_workers(
+    root: &Path,
+    paths: &[PathBuf],
+    query: &SearchText,
+    entity: Option<&str>,
+    limit: usize,
+    explain: bool,
+    workers: usize,
+) -> Result<Vec<SearchResult>, String> {
+    Ok(scan_chunks_with_workers(paths, workers, "search", |chunk| {
+        search_chunk(root, chunk, query, entity, limit, explain)
+    })?
+    .into_iter()
+    .flatten()
+    .collect())
+}
+
+fn search_chunk(
+    root: &Path,
+    paths: &[PathBuf],
+    query: &SearchText,
+    entity: Option<&str>,
+    limit: usize,
+    explain: bool,
+) -> Vec<SearchResult> {
+    let mut top = Vec::with_capacity(limit);
+    for path in paths {
+        if let Some(candidate) = search_document(load_local(root, path), query, entity) {
+            retain_top_ranked_result(&mut top, candidate, limit);
         }
-        let document_relevance = document_relevance(&doc, &query);
-        let document_numbers = document_sensitive_numbers(&doc);
-        let mut matched_section = false;
-        let mut best = None;
-        for section in split_sections(&doc.body) {
-            let section_relevance = section_relevance(&section, &query);
-            let section_numbers = section_sensitive_numbers(&section);
-            let numbers_match = query.sensitive_numbers.iter().all(|number| {
-                document_numbers.contains(number) || section_numbers.contains(number)
-            });
-            let complete_concise_document_match = !query.tokens.is_empty()
-                && query.tokens.is_subset(&document_relevance.concise_terms);
-            let weak_section_for_strong_document = (document_relevance.relevance.tier >= 3
-                || complete_concise_document_match)
-                && section_relevance.relevance.tier == 1;
-            if section_relevance.relevance.is_match()
-                && numbers_match
-                && !weak_section_for_strong_document
+    }
+    top.into_iter()
+        .map(|mut item| {
+            if explain {
+                let (match_tier, matched_fields, matched_terms) =
+                    explain_match(&item.document, &item.section, query);
+                item.result.match_tier = match_tier;
+                item.result.matched_fields = matched_fields;
+                item.result.matched_terms = matched_terms;
+                item.result.text.clear();
+            }
+            item.result
+        })
+        .collect()
+}
+
+fn retain_top_ranked_result(
+    top: &mut Vec<RankedSearchResult>,
+    candidate: RankedSearchResult,
+    limit: usize,
+) {
+    // A result below a chunk's top `limit` unique IDs cannot enter the global
+    // top `limit`: that same chunk already contains `limit` distinct IDs ahead
+    // of it. Keeping the best duplicate per ID preserves the final dedup order.
+    if let Some(index) = top
+        .iter()
+        .position(|item| item.result.id == candidate.result.id)
+    {
+        if search_result_order(&candidate.result, &top[index].result).is_lt() {
+            top[index] = candidate;
+            top.sort_by(|a, b| search_result_order(&a.result, &b.result));
+        }
+        return;
+    }
+    top.push(candidate);
+    top.sort_by(|a, b| search_result_order(&a.result, &b.result));
+    top.truncate(limit);
+}
+
+fn search_document(
+    doc: Document,
+    query: &SearchText,
+    entity: Option<&str>,
+) -> Option<RankedSearchResult> {
+    if entity.is_some_and(|wanted| {
+        !doc.entities
+            .iter()
+            .any(|value| value.eq_ignore_ascii_case(wanted))
+    }) {
+        return None;
+    }
+
+    let document_relevance = document_relevance(&doc, query);
+    let document_numbers = document_sensitive_numbers(&doc);
+    let mut matched_section = false;
+    let mut best = None;
+    for section in split_sections(&doc.body) {
+        let section_relevance = section_relevance(&section, query);
+        let section_numbers = section_sensitive_numbers(&section);
+        let numbers_match = query
+            .sensitive_numbers
+            .iter()
+            .all(|number| document_numbers.contains(number) || section_numbers.contains(number));
+        let complete_concise_document_match =
+            !query.tokens.is_empty() && query.tokens.is_subset(&document_relevance.concise_terms);
+        let weak_section_for_strong_document = (document_relevance.relevance.tier >= 3
+            || complete_concise_document_match)
+            && section_relevance.relevance.tier == 1;
+        if section_relevance.relevance.is_match()
+            && numbers_match
+            && !weak_section_for_strong_document
+        {
+            matched_section = true;
+            let relevance = combined_relevance(&document_relevance, &section_relevance, query);
+            if has_minimum_query_coverage(relevance, &document_relevance, &section_relevance, query)
             {
-                matched_section = true;
-                let relevance = combined_relevance(&document_relevance, &section_relevance, &query);
-                if has_minimum_query_coverage(
-                    relevance,
-                    &document_relevance,
-                    &section_relevance,
-                    &query,
-                ) {
-                    let result = search_result(&doc, &section, relevance.score());
-                    if best
-                        .as_ref()
-                        .is_none_or(|(current, _)| search_result_order(&result, current).is_lt())
-                    {
-                        best = Some((result, section));
-                    }
+                let result = search_result(&doc, &section, relevance.score());
+                if best
+                    .as_ref()
+                    .is_none_or(|(current, _)| search_result_order(&result, current).is_lt())
+                {
+                    best = Some((result, section));
                 }
             }
         }
-        if !matched_section
-            && document_relevance.relevance.is_match()
-            && query.sensitive_numbers.is_subset(&document_numbers)
-        {
-            let document_level = Section {
-                heading: String::new(),
-                heading_path: vec![],
-                text: String::new(),
-            };
-            let section_relevance = SectionRelevance::default();
-            if has_minimum_query_coverage(
-                document_relevance.relevance,
-                &document_relevance,
-                &section_relevance,
-                &query,
-            ) {
-                best = Some((
-                    search_result(&doc, &document_level, document_relevance.relevance.score()),
-                    document_level,
-                ));
+    }
+    if !matched_section
+        && document_relevance.relevance.is_match()
+        && query.sensitive_numbers.is_subset(&document_numbers)
+    {
+        let document_level = Section {
+            heading: String::new(),
+            heading_path: vec![],
+            text: String::new(),
+        };
+        let section_relevance = SectionRelevance::default();
+        if has_minimum_query_coverage(
+            document_relevance.relevance,
+            &document_relevance,
+            &section_relevance,
+            query,
+        ) {
+            best = Some((
+                search_result(&doc, &document_level, document_relevance.relevance.score()),
+                document_level,
+            ));
+        }
+    }
+    best.map(|(result, section)| RankedSearchResult {
+        result,
+        document: doc,
+        section,
+    })
+}
+
+fn finalize_search_results(mut out: Vec<SearchResult>, limit: usize) -> Vec<SearchResult> {
+    out.sort_by(search_result_order);
+    let mut seen = BTreeSet::new();
+    out.retain(|item| seen.insert(item.id.clone()));
+    out.truncate(limit);
+    out
+}
+
+fn scan_worker_count(file_count: usize) -> usize {
+    if file_count < PARALLEL_SCAN_MIN_FILES {
+        return 1;
+    }
+    thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(MAX_SCAN_WORKERS)
+        .min(file_count)
+}
+
+fn scan_chunks<T, F>(paths: &[PathBuf], operation: &str, scan: F) -> Result<Vec<T>, String>
+where
+    T: Send,
+    F: Fn(&[PathBuf]) -> T + Sync,
+{
+    scan_chunks_with_workers(paths, scan_worker_count(paths.len()), operation, scan)
+}
+
+fn scan_chunks_with_workers<T, F>(
+    paths: &[PathBuf],
+    workers: usize,
+    operation: &str,
+    scan: F,
+) -> Result<Vec<T>, String>
+where
+    T: Send,
+    F: Fn(&[PathBuf]) -> T + Sync,
+{
+    let workers = workers.max(1).min(paths.len().max(1));
+    if workers == 1 {
+        return Ok(vec![scan(paths)]);
+    }
+
+    let chunk_size = paths.len().div_ceil(workers);
+    thread::scope(|scope| {
+        let mut chunks = Vec::new();
+        for chunk in paths.chunks(chunk_size) {
+            let scan = &scan;
+            match thread::Builder::new().spawn_scoped(scope, move || scan(chunk)) {
+                Ok(handle) => chunks.push(Ok(handle)),
+                Err(_) => chunks.push(Err(scan(chunk))),
             }
         }
-        if let Some((result, section)) = best {
-            out.push(RankedSearchResult {
-                result,
-                document: doc,
-                section,
-            });
+
+        let mut results = Vec::with_capacity(chunks.len());
+        for chunk in chunks {
+            match chunk {
+                Ok(handle) => match handle.join() {
+                    Ok(result) => results.push(result),
+                    Err(_) => return Err(format!("knowledge {operation} worker failed")),
+                },
+                Err(result) => results.push(result),
+            }
         }
-    }
-    out.sort_by(|a, b| search_result_order(&a.result, &b.result));
-    let mut seen = BTreeSet::new();
-    out.retain(|item| seen.insert(item.result.id.clone()));
-    out.truncate(limit);
-    if explain {
-        for item in &mut out {
-            let (match_tier, matched_fields, matched_terms) =
-                explain_match(&item.document, &item.section, &query);
-            item.result.match_tier = match_tier;
-            item.result.matched_fields = matched_fields;
-            item.result.matched_terms = matched_terms;
-        }
-    }
-    Ok(out.into_iter().map(|item| item.result).collect())
+        Ok(results)
+    })
 }
 
 fn candidate_results(results: &[SearchResult]) -> Vec<CandidateResult> {
@@ -755,9 +898,16 @@ pub struct ReadResult {
     pub section: Option<Section>,
 }
 pub fn read(root: &Path, id: &str, section: Option<&str>) -> Result<ReadResult, String> {
-    let document = catalog_local(root)
-        .into_iter()
-        .find(|doc| doc.id == id)
+    read_internal(root, id, section, None)
+}
+
+fn read_internal(
+    root: &Path,
+    id: &str,
+    section: Option<&str>,
+    workers: Option<usize>,
+) -> Result<ReadResult, String> {
+    let document = find_document_by_id(root, id, workers)?
         .ok_or_else(|| format!("knowledge document not found: {id}"))?;
     let selected = if let Some(wanted) = section {
         let wanted = wanted.to_ascii_lowercase();
@@ -781,6 +931,55 @@ pub fn read(root: &Path, id: &str, section: Option<&str>) -> Result<ReadResult, 
         section: selected,
     })
 }
+
+fn find_document_by_id(
+    root: &Path,
+    id: &str,
+    workers: Option<usize>,
+) -> Result<Option<Document>, String> {
+    let preferred_kind = id
+        .split_once(':')
+        .map(|(kind, _)| kind)
+        .filter(|kind| KNOWLEDGE_KINDS.contains(kind));
+    if let Some(kind) = preferred_kind {
+        let paths = local_markdown_files_for_kinds(root, &[kind.to_owned()]);
+        if let Some(document) = find_document_in_paths(root, &paths, id, workers)? {
+            return Ok(Some(document));
+        }
+    }
+
+    let mut paths = local_markdown_files(root);
+    if let Some(kind) = preferred_kind {
+        paths.retain(|path| infer_kind(path, root) != kind);
+    }
+    find_document_in_paths(root, &paths, id, workers)
+}
+
+fn find_document_in_paths(
+    root: &Path,
+    paths: &[PathBuf],
+    id: &str,
+    workers: Option<usize>,
+) -> Result<Option<Document>, String> {
+    let chunks = if let Some(workers) = workers {
+        scan_chunks_with_workers(paths, workers, "read", |chunk| {
+            find_document_in_chunk(root, chunk, id)
+        })?
+    } else {
+        scan_chunks(paths, "read", |chunk| {
+            find_document_in_chunk(root, chunk, id)
+        })?
+    };
+    Ok(chunks.into_iter().flatten().next())
+}
+
+fn find_document_in_chunk(root: &Path, paths: &[PathBuf], id: &str) -> Option<Document> {
+    paths
+        .iter()
+        .map(|path| load_local(root, path))
+        .find(|document| document.id == id)
+}
+
 pub fn split_sections(body: &str) -> Vec<Section> {
     let mut out = Vec::new();
     let mut stack: Vec<(usize, String)> = vec![];
@@ -1134,8 +1333,17 @@ fn collect_layout_issues(
 }
 
 fn local_markdown_files(root: &Path) -> Vec<PathBuf> {
+    local_markdown_files_for_kinds(root, &[])
+}
+
+fn local_markdown_files_for_kinds(root: &Path, kinds: &[String]) -> Vec<PathBuf> {
     let mut out = vec![];
-    for dir in ["wiki", "lens", "method", "evidence", "decision"] {
+    let directories = if kinds.is_empty() {
+        KNOWLEDGE_KINDS.iter().copied().collect::<BTreeSet<_>>()
+    } else {
+        kinds.iter().map(String::as_str).collect::<BTreeSet<_>>()
+    };
+    for dir in directories {
         collect_markdown_files(&root.join("guru-maker").join(dir), &mut out);
     }
     out.sort();
@@ -1771,6 +1979,24 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, value).unwrap();
     }
+
+    fn search_with_workers_for_test(
+        root: &Path,
+        query: &str,
+        kinds: &[String],
+        entity: Option<&str>,
+        limit: usize,
+        explain: bool,
+        workers: usize,
+    ) -> Vec<SearchResult> {
+        let paths = local_markdown_files_for_kinds(root, kinds);
+        let query = SearchText::new(query);
+        let ranked =
+            search_paths_with_workers(root, &paths, &query, entity, limit, explain, workers)
+                .unwrap();
+        finalize_search_results(ranked, limit)
+    }
+
     #[test]
     fn check_reports_required_time_evidence_and_duplicates() {
         let root = root();
@@ -1849,6 +2075,188 @@ mod tests {
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].id, "wiki:newer");
         assert_eq!(results[1].id, "wiki:older");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn sequential_and_parallel_scans_preserve_search_candidates_filters_and_reads() {
+        let root = root();
+        for index in 0..320 {
+            let special = if index == 257 {
+                "aliases: [durable conversion signal]\nentities: [ticker:FILT]\nsee_also: [wiki:record-001]\n"
+            } else {
+                ""
+            };
+            let numeric = if index == 257 {
+                "The signed operating-margin change was +5.0%."
+            } else {
+                "The record has no signed operating-margin observation."
+            };
+            write(
+                &root,
+                &format!("guru-maker/wiki/record-{index:03}.md"),
+                &format!(
+                    "---\nid: wiki:record-{index:03}\ntitle: Record {index:03}\nsummary: Common liquidity observation.\nas_of: 2026-01-01T00:00:00Z\n{special}---\n\n# Common liquidity\nBroad liquidity context for record {index}.\n\n# Detail\nRecord-specific detail {index}. {numeric}"
+                ),
+            );
+        }
+        write(
+            &root,
+            "guru-maker/lens/union.md",
+            "---\nid: lens:union\ntitle: Union signal lens\nsummary: A repeated-kind filter target.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Application\nUnion signal.",
+        );
+        write(
+            &root,
+            "guru-maker/evidence/excluded.md",
+            "---\nid: evidence:excluded\ntitle: Union signal evidence\nsummary: An excluded repeated-kind target.\nas_of: 2026-01-01T00:00:00Z\nsource: https://example.test/excluded\n---\n\n# Observation\nUnion signal.",
+        );
+        write(
+            &root,
+            "guru-maker/lens/legacy.md",
+            "---\nid: custom:legacy\ntitle: Legacy identifier\nsummary: Exact-read fallback fixture.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Detail\nFallback body.",
+        );
+        write(
+            &root,
+            "guru-maker/lens/misplaced.md",
+            "---\nid: wiki:misplaced\ntitle: Misplaced identifier\nsummary: Known-prefix read fallback fixture.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Detail\nKnown-prefix fallback body.",
+        );
+        write(
+            &root,
+            "guru-maker/wiki/a-duplicate.md",
+            "---\nid: wiki:duplicate\ntitle: Duplicate loser\nsummary: A duplicate winner query appears only in summary.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Notes\nDuplicate winner.",
+        );
+        write(
+            &root,
+            "guru-maker/wiki/z-duplicate.md",
+            "---\nid: wiki:duplicate\ntitle: Duplicate winner\nsummary: The higher-ranked duplicate.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Notes\nWinner body.",
+        );
+
+        assert_eq!(scan_worker_count(PARALLEL_SCAN_MIN_FILES - 1), 1);
+        assert!((1..=MAX_SCAN_WORKERS).contains(&scan_worker_count(320)));
+
+        let no_kinds = Vec::<String>::new();
+        for query in [
+            "common liquidity",
+            "durable conversion signal",
+            "+5.0%",
+            "wiki:record-257",
+            "duplicate winner",
+        ] {
+            let sequential =
+                search_with_workers_for_test(&root, query, &no_kinds, None, 50, false, 1);
+            let parallel =
+                search_with_workers_for_test(&root, query, &no_kinds, None, 50, false, 8);
+            assert_eq!(parallel, sequential, "default search parity for {query:?}");
+            assert_eq!(
+                search_with_kinds(&root, query, &no_kinds, None, 50).unwrap(),
+                sequential,
+                "automatic scan parity for {query:?}"
+            );
+
+            let sequential =
+                search_with_workers_for_test(&root, query, &no_kinds, None, 50, true, 1);
+            let parallel = search_with_workers_for_test(&root, query, &no_kinds, None, 50, true, 8);
+            assert_eq!(
+                parallel, sequential,
+                "candidate search parity for {query:?}"
+            );
+            assert_eq!(
+                search_candidates_with_kinds(&root, query, &no_kinds, None, 50).unwrap(),
+                candidate_results(&sequential),
+                "automatic candidate parity for {query:?}"
+            );
+        }
+        assert_eq!(
+            search_with_kinds(&root, "duplicate winner", &no_kinds, None, 50).unwrap()[0].title,
+            "Duplicate winner"
+        );
+        assert!(search_with_kinds(&root, "-5.0%", &no_kinds, None, 50)
+            .unwrap()
+            .is_empty());
+
+        let all_paths = local_markdown_files(&root);
+        let broad_query = SearchText::new("common liquidity");
+        assert!(
+            search_paths_with_workers(&root, &all_paths, &broad_query, None, 7, false, 1)
+                .unwrap()
+                .len()
+                <= 7
+        );
+        assert!(
+            search_paths_with_workers(&root, &all_paths, &broad_query, None, 7, false, 8)
+                .unwrap()
+                .len()
+                <= 8 * 7
+        );
+
+        let repeated_kinds = vec!["wiki".to_owned(), "lens".to_owned(), "wiki".to_owned()];
+        let unique_kinds = vec!["wiki".to_owned(), "lens".to_owned()];
+        assert_eq!(
+            local_markdown_files_for_kinds(&root, &repeated_kinds),
+            local_markdown_files_for_kinds(&root, &unique_kinds)
+        );
+        let sequential =
+            search_with_workers_for_test(&root, "union signal", &repeated_kinds, None, 50, true, 1);
+        let parallel =
+            search_with_workers_for_test(&root, "union signal", &repeated_kinds, None, 50, true, 8);
+        assert_eq!(parallel, sequential);
+        assert!(parallel.iter().all(|item| item.kind != "evidence"));
+        assert_eq!(
+            search_candidates_with_kinds(&root, "union signal", &repeated_kinds, None, 50).unwrap(),
+            candidate_results(&sequential)
+        );
+
+        let sequential = search_with_workers_for_test(
+            &root,
+            "common liquidity",
+            &no_kinds,
+            Some("TICKER:FILT"),
+            50,
+            true,
+            1,
+        );
+        let parallel = search_with_workers_for_test(
+            &root,
+            "common liquidity",
+            &no_kinds,
+            Some("TICKER:FILT"),
+            50,
+            true,
+            8,
+        );
+        assert_eq!(parallel, sequential);
+        assert_eq!(parallel.len(), 1);
+        assert_eq!(parallel[0].id, "wiki:record-257");
+        assert!(search_with_kinds(
+            &root,
+            "common liquidity",
+            &no_kinds,
+            Some("ticker:OTHER"),
+            50,
+        )
+        .unwrap()
+        .is_empty());
+
+        let sequential = read_internal(&root, "wiki:record-257", Some("Detail"), Some(1)).unwrap();
+        let parallel = read_internal(&root, "wiki:record-257", Some("Detail"), Some(8)).unwrap();
+        assert_eq!(parallel, sequential);
+        assert_eq!(parallel.document.see_also, vec!["wiki:record-001"]);
+        assert!(parallel.section.unwrap().text.contains("+5.0%"));
+        assert_eq!(
+            read(&root, "wiki:record-257", Some("Detail")).unwrap(),
+            sequential
+        );
+
+        let sequential = read_internal(&root, "custom:legacy", None, Some(1)).unwrap();
+        let parallel = read_internal(&root, "custom:legacy", None, Some(8)).unwrap();
+        assert_eq!(parallel, sequential);
+        assert_eq!(parallel.document.kind, "lens");
+
+        let sequential = read_internal(&root, "wiki:misplaced", None, Some(1)).unwrap();
+        let parallel = read_internal(&root, "wiki:misplaced", None, Some(8)).unwrap();
+        assert_eq!(parallel, sequential);
+        assert_eq!(parallel.document.kind, "lens");
+
         let _ = fs::remove_dir_all(root);
     }
 

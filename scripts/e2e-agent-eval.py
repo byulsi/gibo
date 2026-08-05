@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -132,6 +133,9 @@ CHECK_REQUIRED_KEYS = {
     "event_regex": {"pattern"},
     "event_not_regex": {"pattern"},
     "event_command_count": {"pattern"},
+    "runtime_operation_count": {"operation", "count"},
+    "runtime_operation_sequence": {"operations"},
+    "memory_reads_via_runtime": set(),
     "final_regex": {"pattern"},
     "final_not_regex": {"pattern"},
     "change_any": {"pattern"},
@@ -141,6 +145,7 @@ CHECK_REQUIRED_KEYS = {
     "changed_only": {"paths"},
     "changed_content_regex": {"pattern"},
     "changed_content_not_regex": {"pattern"},
+    "changed_frontmatter_contains": {"value"},
     "path_exists": {"path"},
     "path_absent": {"path"},
     "glob_min": {"glob", "count"},
@@ -255,6 +260,36 @@ def validate_configuration(configuration: Any) -> list[dict[str, Any]]:
                 raise ValueError(
                     f"{label} check {check_index} needs a non-negative count"
                 )
+            if check_type == "runtime_operation_count" and not isinstance(
+                check["operation"], dict
+            ):
+                raise ValueError(
+                    f"{label} check {check_index} needs an operation object"
+                )
+            if check_type == "runtime_operation_sequence" and (
+                not isinstance(check["operations"], list)
+                or not check["operations"]
+                or any(
+                    not isinstance(operation, dict)
+                    for operation in check["operations"]
+                )
+            ):
+                raise ValueError(
+                    f"{label} check {check_index} needs operation objects"
+                )
+            if check_type == "changed_frontmatter_contains":
+                fields = check.get("fields")
+                field = check.get("field")
+                if not (
+                    isinstance(field, str)
+                    and field
+                    or isinstance(fields, list)
+                    and fields
+                    and all(isinstance(item, str) and item for item in fields)
+                ):
+                    raise ValueError(
+                        f"{label} check {check_index} needs field or fields"
+                    )
 
     return cases
 
@@ -1031,6 +1066,75 @@ above it. No transaction-cost or intraday data is supplied.
                 ),
             ),
         )
+    elif name == "decision_input_activation":
+        write_text(
+            workspace / "guru-maker" / "lens" / "persistence-confirmation-gate.md",
+            record(
+                "lens:persistence-confirmation-gate",
+                "Persistence confirmation gate",
+                "Requires repeated comparable operating readings before changing risk.",
+                "## Lens\n\nThe monitored operating ratio qualifies only after reaching at least 83% for two consecutive comparable quarters. A single reading below 83% does not satisfy confirmation.\n\n## Applicability and limits\n\nUse when one strong period can be timing or mix rather than durable demand. Recheck metric definitions, the operating base, demand visibility, and account constraints.",
+            ),
+        )
+        prior = record(
+            "decision:atlas-utilization-prior",
+            "Prior Atlas utilization decision",
+            "Earlier point-in-time decision under the former utilization rule.",
+            "## Decision\n\nIncrease Atlas after one quarterly utilization reading above the former 75% threshold.\n\n## Invalidation\n\nRevisit the judgment when the reusable capacity gate or current utilization changes.",
+            fields=(
+                "entities:\n"
+                "  - ticker:ATLS\n"
+                "uses:\n"
+                "  - lens:persistence-confirmation-gate"
+            ),
+        ).replace(
+            "as_of: 2026-07-28T16:00:00-04:00",
+            "as_of: 2026-05-01T16:00:00-04:00",
+        )
+        write_text(
+            workspace / "guru-maker" / "decision" / "atlas-utilization-prior.md",
+            prior,
+        )
+        write_text(
+            workspace
+            / "guru-maker"
+            / "evidence"
+            / "atlas-utilization-current.md",
+            record(
+                "evidence:atlas-utilization-current",
+                "Current Atlas utilization",
+                "Current fictional quarterly utilization observation.",
+                "Atlas utilization was 79% in 2026-Q2. No comparable prior-quarter observation is supplied.",
+                source="https://example.invalid/atlas/utilization",
+                fields="period: 2026-Q2\nentities:\n  - ticker:ATLS",
+            ),
+        )
+    elif name == "concept_gap_activation":
+        write_text(
+            workspace / "guru-maker" / "lens" / "look-through-concentration.md",
+            record(
+                "lens:look-through-concentration",
+                "Look-through concentration budget",
+                "Aggregates standalone weights and vehicle-mediated overlap before setting a risk amount.",
+                "## Lens\n\nCompute the combined burden as standalone holding weights plus each pooled vehicle's account weight multiplied by its underlying overlap, then adjust for leverage. A fixed standalone cap is not portable between accounts. If the loss tolerance and governing ceiling are unavailable, the actionable amount remains unresolved.\n\n## Applicability and limits\n\nUse when correlated holdings or pooled vehicles can hide a common sleeve. Verify vehicle composition, leverage, and the relevant loss horizon.",
+            ),
+        )
+        write_text(
+            workspace / "guru-maker" / "evidence" / "dual-rally-current.md",
+            record(
+                "evidence:dual-rally-current",
+                "Atlas and Borealis joint rally",
+                "Current fictional move and portfolio weights for two related holdings.",
+                "Atlas and Borealis each rose 18%. Their direct portfolio weights are 18% and 17%. A broad technology fund is 20% of the portfolio and reports 30% combined exposure to the same sleeve. No leverage is used. The loss budget and portfolio concentration limit are not supplied.",
+                source="https://example.invalid/portfolio/dual-rally",
+                fields=(
+                    "period: 2026-07-28\n"
+                    "entities:\n"
+                    "  - ticker:ATLS\n"
+                    "  - ticker:BRLS"
+                ),
+            ),
+        )
     elif name == "portfolio_constraints_uninitialized":
         write_text(
             sources / "portfolio-constraints.md",
@@ -1240,10 +1344,360 @@ def extract_successful_commands(events: str) -> list[str]:
             and item.get("type") == "command_execution"
             and item.get("exit_code") == 0
             and isinstance(command, str)
-            and command not in commands
         ):
             commands.append(command)
     return commands
+
+
+def command_name(value: str) -> str:
+    return value.replace("\\", "/").rsplit("/", 1)[-1].lower()
+
+
+def is_shell_boundary(value: str) -> bool:
+    return re.fullmatch(r"[;&|\n]+", value) is not None
+
+
+def shell_tokens(command: str) -> list[str]:
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|\n")
+    lexer.whitespace = " \t\r"
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    return list(lexer)
+
+
+def shell_argv(command: str) -> list[str]:
+    try:
+        arguments = shell_tokens(command)
+        for _ in range(3):
+            boundary = next(
+                (
+                    index
+                    for index, value in enumerate(arguments)
+                    if is_shell_boundary(value)
+                ),
+                len(arguments),
+            )
+            command_arguments = arguments[:boundary]
+            if not command_arguments or command_name(command_arguments[0]) not in {
+                "bash",
+                "sh",
+                "zsh",
+            }:
+                break
+            shell_option = next(
+                (
+                    index
+                    for index, value in enumerate(command_arguments[1:], 1)
+                    if value in {"-c", "-lc"}
+                ),
+                None,
+            )
+            if shell_option is None or shell_option + 1 >= len(command_arguments):
+                break
+            arguments = shell_tokens(command_arguments[shell_option + 1]) + arguments[
+                boundary:
+            ]
+        return arguments
+    except ValueError:
+        return []
+
+
+def shell_segments(command: str) -> list[list[str]]:
+    segments: list[list[str]] = []
+    current: list[str] = []
+    for argument in shell_argv(command):
+        if is_shell_boundary(argument):
+            if current:
+                segments.append(current)
+                current = []
+        else:
+            current.append(argument)
+    if current:
+        segments.append(current)
+    return segments
+
+
+def runtime_operation_from_argv(arguments: list[str]) -> dict[str, Any] | None:
+    if not arguments:
+        return None
+
+    executable = command_name(arguments[0])
+    if executable in {"sh", "bash", "zsh", "pwsh", "powershell"}:
+        if len(arguments) < 2 or command_name(arguments[1]) not in {
+            "gurumaker.sh",
+            "gurumaker.ps1",
+        }:
+            return None
+        arguments = arguments[2:]
+    elif executable in {
+        "gurumaker",
+        "gurumaker.exe",
+        "gurumaker.sh",
+        "gurumaker.ps1",
+    }:
+        arguments = arguments[1:]
+    else:
+        return None
+
+    if len(arguments) < 2 or arguments[0] != "knowledge":
+        return None
+    action = arguments[1]
+    if action not in {"search", "read", "list", "check"}:
+        return None
+
+    value_options = {"--entity", "--kind", "--limit", "--section", "--workspace"}
+    options: dict[str, str | bool] = {}
+    kinds: list[str] = []
+    positionals: list[str] = []
+    index = 2
+    while index < len(arguments):
+        argument = arguments[index]
+        if argument.startswith("--"):
+            if "=" in argument:
+                key, value = argument.split("=", 1)
+                options[key] = value
+                if key == "--kind":
+                    kinds.append(value)
+            elif argument in value_options and index + 1 < len(arguments):
+                options[argument] = arguments[index + 1]
+                if argument == "--kind":
+                    kinds.append(arguments[index + 1])
+                index += 1
+            else:
+                options[argument] = True
+        else:
+            positionals.append(argument)
+        index += 1
+
+    return {
+        "action": action,
+        "value": positionals[0] if positionals else None,
+        "kind": options.get("--kind"),
+        "kinds": kinds,
+        "section": options.get("--section"),
+        "candidates": options.get("--candidates") is True,
+        "limit": options.get("--limit"),
+    }
+
+
+def runtime_operations(commands: list[str]) -> list[dict[str, Any]]:
+    return [
+        operation
+        for command in commands
+        for arguments in shell_segments(command)
+        if (operation := runtime_operation_from_argv(arguments))
+    ]
+
+
+def operation_matches(
+    operation: dict[str, Any], expected: dict[str, Any]
+) -> bool:
+    return all(operation.get(key) == value for key, value in expected.items())
+
+
+def operation_sequence_matches(
+    operations: list[dict[str, Any]], expected: list[dict[str, Any]]
+) -> bool:
+    offset = 0
+    for wanted in expected:
+        match = next(
+            (
+                index
+                for index in range(offset, len(operations))
+                if operation_matches(operations[index], wanted)
+            ),
+            None,
+        )
+        if match is None:
+            return False
+        offset = match + 1
+    return True
+
+
+def is_project_memory_path(value: str) -> bool:
+    normalized = value.replace("\\", "/").rstrip("/")
+    return re.search(
+        r"(?:^|/)(?:guru-maker|\.guru-maker)(?:/|$)",
+        normalized,
+        re.IGNORECASE,
+    ) is not None
+
+
+def wildcard_parent_scope(value: str, workspace: Path) -> str | None:
+    normalized = value.replace("\\", "/")
+    meta_indexes = [
+        index
+        for index, character in enumerate(normalized)
+        if character in "*?[]{}"
+    ]
+    if not meta_indexes:
+        return None
+    component_start = normalized.rfind("/", 0, min(meta_indexes)) + 1
+    prefix = normalized[:component_start].rstrip("/")
+    if not prefix:
+        return None
+    path = Path(prefix)
+    candidate = path if path.is_absolute() else workspace / path
+    return path_scope(candidate, workspace)
+
+
+def references_project_memory(value: str, workspace: Path) -> bool:
+    values = [value]
+    _, separator, assigned = value.partition("=")
+    if separator:
+        values.append(assigned)
+    for candidate in values:
+        if is_project_memory_path(candidate):
+            return True
+        if re.search(r"[*?\[\]{}]", candidate) and wildcard_parent_scope(
+            candidate, workspace
+        ) != "safe":
+            return True
+    return False
+
+
+def is_broad_search_scope(value: str, workspace: Path) -> bool:
+    normalized = value.replace("\\", "/").rstrip("/")
+    if normalized in {"", ".", "..", "guru-maker", ".guru-maker"}:
+        return True
+    if normalized.startswith("../"):
+        return True
+    try:
+        path = Path(value)
+        resolved = (path if path.is_absolute() else workspace / path).resolve()
+        return resolved == workspace.resolve()
+    except OSError:
+        return False
+
+
+def is_safe_search_scope(value: str, workspace: Path) -> bool:
+    if value.startswith("-") or is_project_memory_path(value):
+        return False
+    if is_broad_search_scope(value, workspace):
+        return False
+    normalized = value.replace("\\", "/")
+    if re.search(r"[*?\[\]{}]", normalized):
+        return wildcard_parent_scope(normalized, workspace) == "safe"
+    path = Path(value)
+    candidate = path if path.is_absolute() else workspace / path
+    return candidate.exists()
+
+
+def explicit_search_scopes(arguments: list[str]) -> list[str]:
+    executable = command_name(arguments[0])
+    positionals = [value for value in arguments[1:] if not value.startswith("-")]
+    if executable in {"rg", "grep"} and "--files" not in arguments:
+        return positionals[1:] if len(positionals) >= 2 else []
+    return positionals
+
+
+def path_scope(path: Path, workspace: Path) -> str | None:
+    workspace = workspace.resolve()
+    path = path.resolve()
+    memory_roots = (
+        workspace / "guru-maker",
+        workspace / ".guru-maker",
+    )
+    if any(
+        path == root or root in path.parents for root in memory_roots
+    ):
+        return "memory"
+    if workspace in path.parents:
+        return "safe"
+    return None
+
+
+def memory_reads_via_runtime(commands: list[str], workspace: Path) -> bool:
+    workspace = workspace.resolve()
+    for raw_command in commands:
+        current_directory = workspace
+        previous_directory: Path | None = None
+        directory_stack: list[Path] = []
+        for arguments in shell_segments(raw_command):
+            if runtime_operation_from_argv(arguments):
+                continue
+            executable = command_name(arguments[0])
+            if executable == "pushd" and len(arguments) == 1:
+                if not directory_stack:
+                    return False
+                target = directory_stack[-1]
+                directory_stack[-1] = current_directory
+                previous_directory, current_directory = current_directory, target
+                continue
+            if executable in {"cd", "pushd"} and len(arguments) > 1:
+                directory = arguments[1]
+                if executable == "pushd" and re.fullmatch(r"[+-]\d+", directory):
+                    return False
+                if re.search(r"[*?\[\]{}$`]", directory) or directory.startswith("~"):
+                    return False
+                if directory == "-" and previous_directory is not None:
+                    target = previous_directory
+                else:
+                    path = Path(directory)
+                    target = path if path.is_absolute() else current_directory / path
+                    target = target.resolve()
+                if executable == "pushd":
+                    directory_stack.append(current_directory)
+                previous_directory, current_directory = current_directory, target
+                continue
+            if executable == "popd":
+                if len(arguments) > 1:
+                    return False
+                if directory_stack:
+                    previous_directory, current_directory = (
+                        current_directory,
+                        directory_stack.pop(),
+                    )
+                continue
+
+            working_scope = path_scope(current_directory, workspace)
+            if working_scope == "memory":
+                if executable in {"[", "apply_patch", "mkdir", "pwd", "test", "touch"}:
+                    continue
+                return False
+
+            memory_operands = [
+                index
+                for index, value in enumerate(arguments[1:], 1)
+                if references_project_memory(value, workspace)
+            ]
+            if memory_operands:
+                if executable in {"[", "mkdir", "test", "touch"}:
+                    continue
+                if executable in {"cp", "mv"} and memory_operands == [
+                    len(arguments) - 1
+                ]:
+                    continue
+                return False
+            if executable in {"rg", "grep", "ls", "tree"}:
+                scopes = explicit_search_scopes(arguments)
+                safe_scope = working_scope == "safe" or any(
+                    is_safe_search_scope(value, workspace) for value in scopes
+                )
+                excludes_memory = any(
+                    value == "!guru-maker/**" for value in arguments[1:]
+                )
+                broad_scope = any(
+                    is_broad_search_scope(value, workspace) for value in scopes
+                )
+                if (broad_scope and working_scope != "safe") or (
+                    not safe_scope and not excludes_memory
+                ):
+                    return False
+            if executable == "find":
+                roots = [
+                    value for value in arguments[1:] if not value.startswith("-")
+                ]
+                broad_root = bool(
+                    roots and is_broad_search_scope(roots[0], workspace)
+                )
+                if (
+                    working_scope == "memory"
+                    or not roots
+                    or (broad_root and working_scope != "safe")
+                ):
+                    return False
+    return True
 
 
 def extract_non_shell_tools(events: str) -> list[dict[str, Any]]:
@@ -1396,16 +1850,27 @@ def evaluate_check(
     flags = re.IGNORECASE | re.DOTALL
     commands = extract_commands(events)
     successful_commands = extract_successful_commands(events)
+    operations = runtime_operations(successful_commands)
 
     if check_type == "event_regex":
         ok = any(
             re.search(check["pattern"], command, flags)
             for command in successful_commands
         )
+    elif check_type == "runtime_operation_count":
+        matches = sum(
+            operation_matches(operation, check["operation"])
+            for operation in operations
+        )
+        ok = matches == check["count"]
+    elif check_type == "runtime_operation_sequence":
+        ok = operation_sequence_matches(operations, check["operations"])
     elif check_type == "event_not_regex":
         ok = not any(
             re.search(check["pattern"], command, flags) for command in commands
         )
+    elif check_type == "memory_reads_via_runtime":
+        ok = memory_reads_via_runtime(commands, workspace)
     elif check_type == "event_command_count":
         matching = [
             command
@@ -1468,6 +1933,21 @@ def evaluate_check(
             )
             is None
             for path in matching_files
+        )
+    elif check_type == "changed_frontmatter_contains":
+        path_pattern = check.get("path_pattern", ".*")
+        fields = check.get("fields", [check.get("field")])
+        matching_files = [
+            workspace / path
+            for path in changes
+            if re.search(path_pattern, path, flags)
+            and (workspace / path).is_file()
+        ]
+        ok = any(
+            check["value"] in frontmatter_list(path, field)
+            for path in matching_files
+            for field in fields
+            if field
         )
     elif check_type == "path_exists":
         ok = (workspace / check["path"]).exists()

@@ -31,9 +31,32 @@ Pass `--keep` only when debugging a failure; the script prints the temporary
 fixture path and leaves it for manual inspection. The default always removes
 only the directory it created with `mktemp`.
 
+## Retrieval scale and quality benchmark
+
+The opt-in deterministic benchmark builds the current Runtime and a clean
+v0.0.3 baseline, creates valid synthetic memory in isolated temporary
+workspaces, and compares default search, compact candidates, repeated-kind
+unions, and exact read:
+
+```bash
+python3 scripts/retrieval-benchmark.py --sizes 100 1000 5000 --runs 20
+```
+
+It is separate from `scripts/verify.sh` because timings vary with hardware,
+filesystem cache, corpus shape, and query selectivity. The output includes
+binary, Runtime-source, and benchmark fingerprints; quality and output-parity
+gates; Markdown bytes; worker policy and operation-specific counts; and warm
+p50/p95 timing. Use `--output` to retain JSON outside the repository. Use
+`--binary` with
+`--candidate-revision` for an external candidate and `--baseline-binary` for a
+prebuilt Runtime that reports exactly `0.0.3`. Fewer than 20 measured runs are
+useful for a smoke but intentionally report a null p95. See [Retrieval scaling
+and memory lifecycle](retrieval-scaling.md) before interpreting or publishing
+results.
+
 ## Model-backed agent E2E
 
-The opt-in agent evaluation uses the 67-case matrix in `tests/e2e/cases.json`
+The opt-in agent evaluation uses the 69-case matrix in `tests/e2e/cases.json`
 with a maintainer-selected Codex model. It is intentionally separate from
 `scripts/verify.sh` because it is slower, stochastic, and requires model
 access. The public matrix defines behavior and failure criteria, not a
@@ -120,9 +143,14 @@ Behavioral validation uses fresh temporary projects:
 12. confirm unrelated edits and edits outside initialized projects do not
     invoke knowledge validation;
 13. confirm explicit action intent produces an Execution Brief while order
-   state remains with the external capability;
+    state remains with the external capability;
 14. run equivalent fresh-session smokes in Codex and Claude Code, including
-   hook discovery and trust.
+    hook discovery and trust;
+15. confirm a cue-free material judgment exact-reads a selected prior
+    Decision's authored reusable inputs before applying them; and
+16. confirm a cue-free entity hit with one consequential reusable-role gap
+    makes only one compact concept query, exact-reads the selected record, and
+    leaves ungrounded sizing unresolved.
 
 Release builds cover macOS arm64 and x86-64, Linux arm64 and x86-64, and
 Windows x86-64. Validate the downloaded binary on each target before attaching

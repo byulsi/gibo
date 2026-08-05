@@ -131,6 +131,14 @@ and `updates` or `contradicts` on a Decision target only another Decision.
 `related` is not part of the contract. Relationship and `see_also` targets
 must exist by exact local ID.
 
+For a new Decision, author `uses` and `supports` only for records exact-read
+and materially applied to that judgment. `supports` includes only
+Evidence whose observation was actually reused. A relationship records
+provenance and never triggers Runtime or background copying, loading, or
+recursive traversal by itself. The explicit material-work activation pass is
+the one exception: the host follows a selected Decision's authored `uses` for
+one hop under the retrieval contract.
+
 Before and after a local edit, follow [the bounded in-task curation
 contract](curation.md). Run
 `gurumaker knowledge check --workspace <project-root>` once after the complete

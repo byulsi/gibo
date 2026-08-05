@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.4 - 2026-08-05
+
+- Activate a selected Decision's authored reusable inputs before material
+  synthesis, evaluate only plausibly material supporting Evidence and carry
+  forward only reused observations, and allow one bounded concept-gap query
+  when the most consequential reusable role is still absent, plus one
+  Decision-only lineage fallback when mixed candidates contain no plausibly
+  applicable Decision.
+- Keep Exact IDs as the deterministic selection, relationship, and lineage
+  authority while natural-language compact candidates remain the discovery
+  path; defer semantic retrieval until a labeled recall failure justifies it.
+- Scale direct Markdown retrieval with bounded native parallel scans,
+  kind-first discovery, per-record section reduction, and reproducible quality
+  and latency evaluation without adding an index, cache, daemon, or service.
+- Extend the Codex CLI behavior matrix with natural-language declared-input and
+  concept-gap activation cases while preserving the v0.0.3 candidate, health,
+  curation, navigation, and large-corpus contracts.
+
 ## 0.0.3 - 2026-07-30
 
 - Add stable-ID Wiki `see_also` navigation, deterministic backlinks and

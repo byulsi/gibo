@@ -229,6 +229,11 @@ heading path, entities, aliases, tags, authored analytical relationships,
 score, `match_tier`, `matched_fields`, and `matched_terms`. Match tiers are
 `exact_id`, `exact_metadata`, `phrase`, `all_terms`, and `partial`.
 
+An exact ID is the Runtime's internal authority and control address for a
+selected read, an authored relationship, or a Decision lineage. It is not
+query syntax users must learn: natural-language search returns candidate IDs,
+and the host uses the selected ID for deterministic exact read.
+
 When only element metadata matches, default search returns document-level
 context rather than an unrelated section. Exact local IDs rank first while
 authored relationship targets remain discoverable. Exact titles, aliases,
@@ -247,19 +252,65 @@ This remains deterministic lexical retrieval. It does not infer synonyms,
 translations, or relationships. The bounded host reformulation below handles a
 plausible terminology or language mismatch.
 
+Search narrows discovery to the union of requested kinds before parsing,
+deduplicates repeated kind directories, and streams each Markdown path into at
+most its single best authored-section result. Each worker retains only its
+deterministic top `limit` unique IDs before the unchanged final merge, sort,
+deduplication, and limit, then discards full parsed Documents. The merge retains
+at most `workers × limit` compact survivors. At 256 files or more, the scan uses
+available native parallelism capped at eight workers; smaller sets remain
+sequential. Exact read scans the collection named by a known ID prefix first
+and falls back to the other local collections when absent; an unknown prefix
+scans all collections. It uses the same bounded worker policy. The scorer,
+`MatchTier`, candidate explanations, entity and numeric rules, and CLI remain
+unchanged. No persistent cache or index participates in search or exact read.
+
 For direct recall, run one targeted candidate query and read one to three
-selected exact IDs. For a material named analysis, add one second query over
-Wiki, Lens, and Method only when reusable concepts can materially change the
-answer. After a no-match or partial-only result, one bounded reformulation is
-allowed when an alias, identifier, language, abbreviation, or terminology
-mismatch is plausible. A second no-match ends recall. An explicit adjacent
-comparison queries the reusable concept rather than the named entity.
+selected exact IDs. After a no-match or partial-only result, one bounded
+reformulation is allowed when an alias, identifier, language, abbreviation, or
+terminology mismatch is plausible. A second no-match ends recall. An explicit
+adjacent comparison queries the reusable concept rather than the named entity.
 
 Every material research task or requested judgment in an initialized project
 begins with one compact target query so existing Evidence and Decisions can
 inform the work. Narrow facts, clearly unrelated tasks, and uninitialized
-projects skip it. This natural-language routing does not require the user to
-name Guru Maker or a public Skill.
+projects skip it. When prior Decisions and current Evidence could both matter,
+leave the first query unscoped rather than splitting it into kind-specific
+passes. This natural-language routing does not require the user to name Guru
+Maker or a public Skill.
+
+Candidate selection is followed by a bounded activation pass for material
+work. If a selected Decision materially informs the answer, exact-read the
+full Decision and each unique local Wiki, Lens, or Method in its authored
+`uses`. From its reasoning and the initial candidates, exact-read only
+`supports` Evidence plausibly material enough to evaluate; carry forward only
+observations actually reused. Apply the same rule to a selected challenger,
+read each target at most once, and stop after that one authored hop. Never recurse,
+follow ordinary Markdown links, expand Wiki neighbors, or inspect Pack source
+checkouts. Report a missing, unreadable, stale, or inapplicable input rather
+than silently reconstructing it.
+
+Before synthesis, identify the single most consequential reusable role: an
+interpretation or exposure frame, a repeatable calculation or review
+procedure, or a stable mechanic or constraint. If no directly read Wiki, Lens,
+or Method covers it, make one compact concept-gap query and exact-read one
+selected result. Use one matching kind filter when clear; when ambiguous, use
+the repeated Wiki, Lens, and Method filters as one OR query. Do not fan out by
+kind or reformulate a gap no-match. A plausible rule improvised from Evidence
+does not count as applied reusable memory.
+
+Trace every consequential threshold, allocation, weight, sizing rule, or
+calculation to a user constraint, current Evidence, an explicit calculation,
+or a directly read and applied reusable record. Otherwise mark it illustrative
+or unresolved. A new Decision lists only the `uses` and `supports` records
+directly read and materially applied.
+
+If Guru Mode permits that Decision write but the initial mixed candidates
+contain no plausibly applicable Decision, run one same-intent Decision-only
+candidate search first. It protects duplicate detection and authored lineage
+when Evidence fills the mixed Top-6; it is separate from the one reusable-role
+gap query and is skipped when a Decision was already returned or no write
+follows.
 
 Primary-agent selection is the default. Lightweight reranking is only an
 evaluation option when all compact candidates are partial and two or more are
@@ -276,6 +327,10 @@ related concepts, effects, comparisons, or transfer. It never returns bodies,
 recurses, or expands ordinary search context. Do not fall back to a catalog,
 repeated subqueries, index, RAG service, vector store, or parent-directory
 scan.
+
+See [Retrieval scaling and memory lifecycle](retrieval-scaling.md) for the
+measurement protocol, canonical-storage policy, and gates for any additional
+lexical or semantic layer.
 
 ## Collection health
 

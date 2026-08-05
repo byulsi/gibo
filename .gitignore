@@ -18,6 +18,7 @@
 !.env.example
 
 # Incidental maintainer caches
+/_workspace/
 __pycache__/
 *.py[cod]
 .pytest_cache/

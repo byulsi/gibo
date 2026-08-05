@@ -10,6 +10,8 @@ user request
   -> shared wrapper resolves the pinned Rust Runtime
   -> Runtime returns compact deterministic candidates
   -> host selects and exact-reads relevant records
+  -> host activates one authored Decision-input hop when material
+  -> optional single reusable-role gap query
   -> optional bounded local memory or Decision edit
   -> Runtime reports health and validates the write
   -> optional offline Decision Graph
@@ -70,16 +72,43 @@ Queries recursively scan only local Markdown under `guru-maker/`. Exact IDs,
 entities, aliases, titles, summaries, periods, headings, and content contribute
 to lexical relevance. Compact candidate search omits bodies and explains its
 match; the host selects one to three records and exact-reads only those.
-Repeated kind filters support a target lane and, for material named analysis
-where it can change the answer, one reusable Wiki/Lens/Method concept lane.
-The Runtime is the only project-memory read interface, even when a record path
-or ID is visible. Memory-using work starts with that query rather than a
-recursive workspace inventory; inspection of user-supplied evidence remains
-scoped to its source path. Every `guru-maker/` record is project memory
+Repeated kind filters are one OR filter. Exact IDs are the internal authority
+and control lane for reads, relationships, and lineage, not user-facing query
+syntax. The Runtime is the only project-memory read interface, even when a
+record path or ID is visible. Memory-using work starts with that query rather
+than a recursive workspace inventory; inspection of user-supplied evidence
+remains scoped to its source path. Every `guru-maker/` record is project memory
 regardless of whether it is described as supplied, current, or Evidence;
 ordinary external source files live outside that hierarchy. After a no-match
 or partial-only result, one bounded normalization is allowed when an alias,
 identifier, language, or terminology mismatch is plausible.
+
+Search narrows discovery by the requested kind union, streams each Markdown
+path into at most its best authored-section result, and retains only each
+worker's deterministic top `limit` unique IDs before the final unchanged merge,
+ranking, deduplication, and limit. Collections with at least 256 files use
+available native parallelism capped at eight workers; smaller scans remain
+sequential. Exact read scans the collection named by a known ID prefix first,
+then falls back to the other local collections when absent; an unknown prefix
+scans all collections. It uses the same bounded worker policy. This changes no
+CLI flag, score, `MatchTier`, candidate explanation, entity behavior, or exact
+numeric rule.
+
+Material research and judgments add bounded host-side activation after
+selection. When a selected Decision informs the work, the host exact-reads its
+full record, each unique local reusable record in `uses`, and only `supports`
+Evidence plausibly material enough to evaluate, carrying forward only
+observations actually reused. That is one authored hop, never recursive graph
+or Wiki expansion. If no directly read reusable record covers the single most
+consequential role, one compact concept-gap query may select one Wiki, Lens, or
+Method. The host exposes missing, stale, or inapplicable inputs and grounds
+consequential thresholds, allocations, and calculations.
+
+When Guru Mode permits a Decision write, the mixed target query satisfies
+pre-write selection only when it returned a plausibly applicable Decision.
+Otherwise one same-intent Decision-only fallback protects lineage from
+Evidence-dominated Top-6 results. This lane is separate from the concept-gap
+query and is skipped when no Decision will be written.
 
 An explicit adjacent comparison queries a reusable concept rather than an
 entity and may also reformulate it once. Explicit related-concept exploration
@@ -90,6 +119,8 @@ ambiguous holdout improves Top-1 selection by at least five percentage points
 may delegate at most six compact cards to a read-only subagent; the primary
 agent still owns the final selection. There is no fixed router, catalog
 fallback, index, vector store, RAG service, or MCP retrieval surface.
+Measured scaling and lifecycle gates are defined in [Retrieval scaling and
+memory lifecycle](retrieval-scaling.md).
 
 ## Relationships and graph
 

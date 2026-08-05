@@ -26,7 +26,8 @@ remains available:
 - `$guru-memory` for memory-only recall, initialization, maintenance of local
   Wiki, Lens, Evidence, and Method records, or an explicit Guru Mode change;
 - `$guru-decision` for a requested point-in-time Decision or outcome review,
-  the graph, and explicit-action Execution Briefs;
+  including bounded activation of an applicable prior Decision's authored
+  inputs, plus the graph and explicit-action Execution Briefs;
 - `$guru-train` for explicit lesson extraction from a reviewed scenario,
   correction, or postmortem; and
 - `$guru-packs` only for explicit kind-specific Guru Pack lifecycle work.
@@ -92,6 +93,21 @@ or in Claude Code:
 
 Guru Maker then creates `guru-maker/` and `.guru-maker/` in the selected
 project. It records Guru Mode `auto` in `.guru-maker/mode`.
+
+Material work begins with compact project-memory candidates. When a selected
+Decision informs the answer, the host exact-reads the Decision, its authored
+Wiki, Lens, and Method inputs, and only plausibly material supporting Evidence
+for evaluation, carrying forward only observations actually reused. If the
+single most consequential reusable role remains uncovered, the host may
+make one concept-gap query. This is bounded host behavior, not background
+retrieval, Runtime context injection, or recursive graph traversal. Exact IDs
+are internal addresses selected from natural-language results; users do not
+need to know them.
+
+When Guru Mode permits a new Decision and the initial mixed candidates contain
+no plausibly applicable Decision, one same-intent Decision-only fallback search
+protects lineage before the write. It is not run when a Decision was already
+returned or when the task will not write one.
 
 `auto` lets the agent use relevant memory and make minimum, durable, reviewable
 memory improvements during ordinary natural-language work in that initialized

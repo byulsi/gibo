@@ -49,29 +49,51 @@ before any `gurumaker` command.
 
 Preserve earlier Decisions; use later authored `updates` or `contradicts`
 relationships rather than rewriting history. Re-test material prior judgment
-memory and follow its authored challenger chain before relying on it. Challenge
-the judgment with the validation appropriate to its claim, data, horizon, and
-instrument.
+memory and follow its authored challenger chain before relying on it. Apply the
+retrieval reference's bounded activation pass before synthesis: exact-read an
+informing Decision in full, each unique reusable input in its authored `uses`,
+and only plausibly material `supports` Evidence for evaluation; carry forward
+only observations actually reused. Expose missing, stale, or inapplicable
+inputs. If the single most consequential reusable role remains
+uncovered, run the one allowed concept-gap query and exact-read its selected
+result; do not fan out by kind or reformulate a no-match. Ground consequential
+thresholds, allocations, and calculations, then challenge the judgment with
+validation appropriate to its claim, data, horizon, and instrument.
 
 For every requested material judgment in an initialized project, begin with
 one compact target query and read the selected prior Evidence or Decision
-records before gathering more evidence. Use a second Wiki/Lens/Method concept
-lane only when it can materially change the judgment. Treat “should we act?”,
-a consequential choice, a revision, or an outcome review as material; do not
-turn casual explanation or open-ended exploration into a Decision.
+records before gathering more evidence. When prior Decisions and current
+Evidence could both matter, keep that first query unscoped instead of splitting
+it by kind. Treat “should we act?”, a consequential choice, a revision, or an
+outcome review as material.
+Do not precede the target query with `rg --files`, `find`, `ls`, `tree`, or an
+equivalent broad workspace inventory. Pass `--workspace .` to the Runtime for
+discovery, and inspect an ordinary non-memory source path only when the prompt
+or a specific result identifies it. The initial target query also satisfies
+the curation pre-write search only when it returns a plausibly applicable
+Decision. If none is returned and Guru Mode permits a new Decision write, run
+exactly one same-intent `--kind decision --candidates --limit 6` fallback
+before writing; do not reformulate it, and skip it when no Decision will be
+written. This bounded lineage check is separate from the one concept-gap
+query. Treat an exposure, concentration, causal, interpretation, or risk frame
+as a clear Lens gap even when the answer also needs arithmetic or sizing; do
+not broaden that role by kind.
+Do not turn casual explanation or open-ended exploration into a Decision.
 A user-named prior Decision is the target query: use its one exact-ID JSON
 search instead of first running a separate broad Decision search. From that
-result, exact-read the named Decision, its selected current challenger, and at
-most one material supporting Evidence record. Do not re-search a challenger
-already returned by that pass. The exact-ID challenger pass also satisfies the
-curation pre-write search; do not run another broad topic or duplicate-check
-query. Use the one remaining search, when needed, only on the selected
-challenger to detect a later `updates` or `contradicts` record. A non-forked
-named lineage therefore stays within two searches and one to three pre-write
-exact reads. If multiple direct challengers remain materially plausible,
-report the fork instead of silently dropping a branch to meet the budget.
-After writing, rely on the standalone final knowledge check rather than
-exact-reading the new file merely to verify the write.
+result, exact-read the named Decision and its selected current challenger, then
+activate the unique one-hop inputs of each Decision actually used. Do not
+re-search a challenger already returned by that pass. The exact-ID challenger
+pass also satisfies the curation pre-write search; do not run another broad
+topic or duplicate-check query. Use the one remaining search, when needed,
+only on the selected challenger to detect a later `updates` or `contradicts`
+record. A non-forked named lineage stays within two lineage searches;
+activation adds exact reads and may add its one separate concept-gap query when
+the consequential reusable role remains uncovered. If multiple direct
+challengers remain materially plausible, report the fork instead of silently
+dropping a branch to meet the lineage budget. After writing, rely on the
+standalone final knowledge check rather than exact-reading the new file merely
+to verify the write.
 A question about whether new evidence changes, weakens, or qualifies a thesis
 remains Research when it does not request an investment choice or explicitly
 revisit a stored Decision. If the user excludes an allocation or investment

@@ -139,6 +139,10 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(research.contains("do not act as an agent or tool\nrouter"));
     assert!(research.contains("Never filesystem-read a `guru-maker/` record"));
     assert!(research.contains("Guru Mode `off` or a\nno-write instruction does not disable"));
+    assert!(research.contains("bounded activation pass"));
+    assert!(research.contains("authored reusable inputs"));
+    assert!(research.contains("single most consequential\nreusable role"));
+    assert!(research.contains("one allowed concept-gap query"));
     assert!(research.contains("../../shared/gurumaker/references/guru-mode.md"));
     assert!(research.contains("../../shared/gurumaker/references/research-capabilities.md"));
     let research_capabilities = normalized("shared/gurumaker/references/research-capabilities.md");
@@ -187,6 +191,11 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(decision.contains("does not mention Guru Maker or a Skill"));
     assert!(decision.contains("every requested material judgment in an initialized project"));
     assert!(decision.contains("casual explanation or open-ended exploration"));
+    assert!(decision.contains("bounded activation pass"));
+    assert!(decision.contains("each unique reusable input in its authored `uses`"));
+    assert!(decision.contains("only plausibly material `supports` Evidence for evaluation"));
+    assert!(decision.contains("carry forward\nonly observations actually reused"));
+    assert!(decision.contains("one allowed concept-gap query"));
     assert!(decision.contains("../../shared/gurumaker/references/guru-mode.md"));
     assert!(
         decision.contains("route any write through the fitting Memory, Research, or Train Skill")
@@ -265,7 +274,7 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         "exact ID",
         "compact-candidate query",
         "Repeated `--kind` values are an OR filter",
-        "one reusable-concept query",
+        "one compact concept query",
         "at most six candidate cards",
         "no record body",
         "lightweight subagent",
@@ -280,12 +289,28 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         "translate the same concept once into the likely",
         "Do not repeat the unchanged query",
         "visited IDs",
-        "within two searches total and one to three pre-write exact reads",
+        "A non-forked named lineage stays within two lineage",
+        "may add the separate one concept-gap query",
         "do not exact-read the just-written record",
         "`updates`",
         "`contradicts`",
         "every material research task or requested judgment",
         "one compact target query",
+        "Activate selected memory for material work",
+        "Candidate selection is discovery, not application",
+        "each unique local Wiki, Lens, or Method in its authored `uses`",
+        "From the Decision's reasoning and the initial candidate cards",
+        "An evaluation read does not imply reuse",
+        "carry forward only an observation the answer actually reuses",
+        "one authored hop",
+        "single most consequential reusable role",
+        "exactly one compact concept query",
+        "Do not query once per kind",
+        "trace every consequential threshold",
+        "An exact ID is the Runtime's internal authority and control address",
+        "it is not syntax the user must know or type",
+        "limits graph depth, duplicate reads, and search lanes",
+        "do not sample them or partially rely on the Decision",
         "narrow fact",
     ] {
         assert!(
@@ -381,8 +406,8 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
 
     let cases = matrix["cases"].as_array().unwrap();
     assert!(
-        cases.len() >= 67,
-        "E2E matrix must keep at least 67 realistic prompts"
+        cases.len() >= 69,
+        "E2E matrix must keep at least 69 realistic prompts"
     );
     let ids = cases
         .iter()
@@ -518,6 +543,82 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
                 .as_str()
                 .is_some_and(|pattern| pattern.contains("decision"))));
 
+    let input_activation = cases.iter().find(|case| case["id"] == "D68").unwrap();
+    let input_prompt = input_activation["prompt"].as_str().unwrap().to_lowercase();
+    for cue in ["guru", "skill", "memory", "save", "record"] {
+        assert!(!input_prompt.contains(cue), "D68 leaks explicit cue {cue}");
+    }
+    let input_checks = input_activation["checks"].as_array().unwrap();
+    for (record_id, expected_count) in [
+        ("decision:atlas-utilization-prior", 1_u64),
+        ("lens:persistence-confirmation-gate", 1_u64),
+        ("evidence:atlas-utilization-current", 1_u64),
+    ] {
+        assert!(input_checks.iter().any(|check| {
+            check["type"] == "runtime_operation_count"
+                && check["operation"]["action"] == "read"
+                && check["operation"]["value"] == record_id
+                && check["count"] == expected_count
+        }));
+    }
+    assert!(input_checks
+        .iter()
+        .any(|check| check["type"] == "memory_reads_via_runtime"));
+    assert!(input_checks.iter().any(|check| {
+        check["type"] == "changed_frontmatter_contains"
+            && check["field"] == "uses"
+            && check["value"] == "lens:persistence-confirmation-gate"
+    }));
+
+    let gap_activation = cases.iter().find(|case| case["id"] == "D69").unwrap();
+    let gap_prompt = gap_activation["prompt"].as_str().unwrap().to_lowercase();
+    for cue in ["guru", "skill", "memory", "save", "record", "lens"] {
+        assert!(!gap_prompt.contains(cue), "D69 leaks explicit cue {cue}");
+    }
+    let gap_checks = gap_activation["checks"].as_array().unwrap();
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "runtime_operation_count"
+            && check["operation"]["action"] == "search"
+            && check["count"] == 3
+    }));
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "runtime_operation_count"
+            && check["operation"]["action"] == "search"
+            && check["operation"]["kinds"] == serde_json::json!(["lens"])
+            && check["operation"]["candidates"] == true
+            && check["operation"]["limit"] == "6"
+            && check["count"] == 1
+    }));
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "runtime_operation_count"
+            && check["operation"]["action"] == "search"
+            && check["operation"]["kinds"] == serde_json::json!(["decision"])
+            && check["operation"]["candidates"] == true
+            && check["operation"]["limit"] == "6"
+            && check["count"] == 1
+    }));
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "runtime_operation_sequence"
+            && check["operations"].as_array().is_some_and(|operations| {
+                operations.len() == 2
+                    && operations[0]["action"] == "search"
+                    && operations[0]["kind"].is_null()
+                    && operations[1]["action"] == "search"
+                    && operations[1]["kinds"] == serde_json::json!(["decision"])
+            })
+    }));
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "runtime_operation_count"
+            && check["operation"]["action"] == "read"
+            && check["operation"]["value"] == "lens:look-through-concentration"
+            && check["count"] == 1
+    }));
+    assert!(gap_checks.iter().any(|check| {
+        check["type"] == "changed_frontmatter_contains"
+            && check["field"] == "supports"
+            && check["value"] == "evidence:dual-rally-current"
+    }));
+
     for (case_id, kind, operation) in [
         ("I59", "wiki", "use"),
         ("I60", "method", "update"),
@@ -620,7 +721,14 @@ fn agent_e2e_matrix_is_diverse_isolated_and_qualitatively_reviewable() {
         "changed_content_not_regex",
         "changed_at_most_matching",
         "event_command_count",
+        "runtime_operation_count",
+        "runtime_operation_sequence",
+        "memory_reads_via_runtime",
         "extract_successful_commands",
+        "runtime_operations(successful_commands)",
+        "punctuation_chars=\";&|\\n\"",
+        "memory_reads_via_runtime(commands, workspace)",
+        "changed_frontmatter_contains",
         "record_frontmatter_list_equals",
         "wiki_one_way_link",
         "glob_exact",
@@ -687,6 +795,8 @@ fn wiki_authoring_is_llm_friendly_and_linked_without_becoming_a_graph() {
         "does not create a Decision Graph edge",
         "A Wiki Pack must include every exact `see_also` target",
         "never follows or automatically adds a target",
+        "never triggers Runtime or background copying, loading, or recursive traversal",
+        "explicit material-work activation pass is the one exception",
     ] {
         assert!(
             records.contains(required),
@@ -771,6 +881,60 @@ fn linked_wiki_is_current_while_semantic_retrieval_remains_measured() {
     ] {
         assert!(readme.contains(required), "roadmap misses {required}");
     }
+}
+
+#[test]
+fn retrieval_scaling_is_bounded_measured_and_keeps_markdown_canonical() {
+    let scaling = normalized("docs/retrieval-scaling.md");
+    for required in [
+        "Search performance, retrieval quality, memory activation, and curation are separate concerns",
+        "stable internal authority and control address",
+        "linear worst case in the Markdown scanned",
+        "result-order parity for narrow, broad common-term, candidate, repeated-kind, and entity-filter searches",
+        "literal retrieval invariants before timing",
+        "exact-ID Top-1",
+        "no-answer precision",
+        "declared-input coverage",
+        "activation false negatives and false positives",
+        "Corpus growth never authorizes lossy compression",
+        "authored section is the retrieval and context unit",
+        "raw-section fallback",
+        "Latency or peak-memory failure",
+        "disposable fielded lexical index",
+        "fail open to the correct direct scan",
+        "Semantic recall failure",
+        "fixed context-token budget",
+        "complete model and index lifecycle",
+        "Global synthesis failure",
+    ] {
+        assert!(scaling.contains(required), "scaling contract misses {required}");
+    }
+
+    let benchmark = normalized("scripts/retrieval-benchmark.py");
+    for required in [
+        "BASELINE_REF = \"v0.0.3\"",
+        "default=[100, 1000, 5000]",
+        "default=20",
+        "runtime_source_sha256",
+        "benchmark_sha256",
+        "warm_p50",
+        "warm_p95",
+        "candidate_over_v0.0.3_p50",
+        "signed_number_top1",
+        "wrong_sign_no_match",
+        "repeated_kind_candidate_top1",
+        "broad_candidate_search",
+        "entity_filter_search",
+        "alternating AB/BA within each operation",
+        "output_parity",
+    ] {
+        assert!(
+            benchmark.contains(required),
+            "retrieval benchmark misses {required}"
+        );
+    }
+    assert!(!benchmark.contains("cytoscape"));
+    assert!(!benchmark.contains("node_modules"));
 }
 
 #[test]

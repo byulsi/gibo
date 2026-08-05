@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml/badge.svg)](https://github.com/monarchjuno/guru-maker/actions/workflows/ci.yml)
 ![Rust 1.82+](https://img.shields.io/badge/Rust-1.82%2B-000000?logo=rust&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.3-blue)
+![Version](https://img.shields.io/badge/version-0.0.4-blue)
 
 </div>
 
@@ -209,10 +209,27 @@ neighbor content.
 
 Ordinary retrieval uses small candidate cards, then exact-reads only the
 selected records. Exact IDs, entities, and numbers remain deterministic; the
-host agent owns semantic selection. Lightweight subagent reranking remains an
-evaluation-gated host option, not recommended default behavior, until it
-improves Top-1 selection by at least five percentage points on a representative
-ambiguous holdout. No fixed router is required.
+host agent owns semantic selection. Exact IDs are the internal authority and
+control lane for reading and authored relationships, not syntax users must
+learn. Lightweight subagent reranking remains an evaluation-gated host option,
+not recommended default behavior, until it improves Top-1 selection by at
+least five percentage points on a representative ambiguous holdout. No fixed
+router is required.
+
+For material work, candidate selection is followed by a bounded activation
+pass. If a selected Decision informs the answer, the host exact-reads its full
+record, each unique Wiki, Lens, or Method in its authored `uses`, and only
+supporting Evidence plausibly material enough to evaluate. It carries forward
+only observations actually reused. If no directly read reusable record covers
+the single most consequential role, one concept-gap query may select one more
+reusable record. The pass never recurses or fans out by kind, and missing,
+stale, or inapplicable inputs remain visible.
+
+If a material judgment will create a Decision but the initial mixed
+candidate set contains no plausibly applicable Decision, the host makes one
+Decision-only fallback search before writing. This protects prior-decision
+lineage when higher-ranked Evidence fills the compact result set; it is skipped
+when a Decision was already returned or Guru Mode does not permit the write.
 
 In Guru Mode `auto`, an eligible memory write also keeps its immediate
 neighborhood tidy: it checks for an existing concept, uses the kind-specific
@@ -247,6 +264,7 @@ Host agents discover five public Skills:
 
 - [Installation](installation.md)
 - [Knowledge model and retrieval](docs/knowledge-model.md)
+- [Retrieval scaling and memory lifecycle](docs/retrieval-scaling.md)
 - [Decision memory and graph](docs/decision-memory.md)
 - [Guru Pack contract](docs/community-plugins.md)
 - [Architecture and product boundaries](docs/architecture.md)
@@ -255,9 +273,18 @@ Host agents discover five public Skills:
 
 Markdown records and authored relationships remain canonical. These are
 evaluation gates, not promised features. The current retrieval remains
-project-scoped lexical candidate search followed by exact-ID reads. Any future
-derived layer must be rebuildable from local Markdown and ignore Pack source
-checkouts.
+project-scoped lexical candidate search followed by exact-ID reads. It streams
+each record into at most one best-section result and uses bounded native scans
+for larger collections without adding an index, cache, model artifact, daemon,
+or service. Any future derived layer must be rebuildable from local Markdown
+and ignore Pack source checkouts. The maintained comparison protocol and
+lifecycle gates, including the measured v0.0.4 comparison with the v0.0.3
+baseline, are in [Retrieval scaling and memory
+lifecycle](docs/retrieval-scaling.md).
+
+- **Fielded lexical index.** Evaluate one only after a representative corpus
+  demonstrates a stated scan-latency or peak-memory failure. Markdown remains
+  canonical, and missing or stale derived state must fail open to direct scan.
 
 - **Hybrid semantic retrieval.** Only if a labeled project corpus shows lexical
   Recall@K missing a stated target across terminology, language, or conceptual
@@ -273,3 +300,12 @@ without unacceptable precision, context-token, latency, or migration cost.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [development guide](docs/development.md).
+
+## Disclaimer
+
+Guru Maker is software for organizing research and decision records. It does
+not provide investment, financial, legal, or tax advice, guarantee outcomes,
+or execute trades. Its outputs may be incomplete or incorrect; verify material
+facts and sources independently and consult qualified professionals when
+appropriate. You remain solely responsible for investment decisions,
+compliance, and resulting gains or losses.

@@ -86,12 +86,16 @@ For an eligible write:
 
    Reuse an applicable target or relationship search already completed in the
    task. A Decision exact-ID challenger pass satisfies this step; never repeat
-   the same concept search solely as a pre-write duplicate check.
-2. Use at most one bounded reformulation under the retrieval contract. Select
-   one to three exact IDs and read them before deciding whether to improve an
-   existing element or create a new one. When updating a selected record, use
-   the path returned on its candidate card; do not enumerate the memory tree to
-   rediscover that file.
+   the same concept search solely as a pre-write duplicate check. For a new
+   Decision, follow the retrieval contract's one Decision-only fallback when
+   the initial mixed candidates contain no plausibly applicable Decision.
+2. Use at most one bounded reformulation of an eligible initial or explicit
+   adjacent-recall query under the retrieval contract. Never reformulate a
+   Decision-only fallback or concept-gap query. Select one to three exact IDs
+   and read them before deciding whether to improve an existing element or
+   create a new one. When updating a selected record, use the path returned on
+   its candidate card; do not enumerate the memory tree to rediscover that
+   file.
 3. Apply the kind-specific lifecycle below. In Auto, keep incidental curation
    to the selected concept and its directly relevant local, mutable
    neighborhood; an entity match alone does not authorize unrelated cleanup.

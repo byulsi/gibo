@@ -58,10 +58,15 @@ before lookup; use Runtime search and exact read for all project memory.
 
 For every material research task in an initialized project, run one compact
 target query before external research. Skip it only for a narrow fact or a
-clearly unrelated task. Add the separate Wiki/Lens/Method concept lane only
-when reusable knowledge can materially change the analysis. This retrieval is
-useful context; the pre-write candidate search remains separately required for
-deduplication when Auto retains a result.
+clearly unrelated task. After candidate selection, apply the retrieval
+reference's bounded activation pass: exact-read an informing Decision, its
+authored reusable inputs, and only plausibly material supporting Evidence for
+evaluation; carry forward only observations actually reused. Expose missing,
+stale, or inapplicable inputs. If the single most consequential
+reusable role remains uncovered, run the one allowed concept-gap query and
+exact-read its selected result; do not fan out by kind or reformulate a
+no-match. This retrieval is useful context; the pre-write candidate search
+remains separately required for deduplication when Auto retains a result.
 
 In an initialized workspace, resolve Guru Mode before a possible write. In
 `auto`, apply the shared durability gate after completing the research; do not
