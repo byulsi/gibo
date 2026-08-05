@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Publish each GitHub Release body from its matching versioned changelog
+  section, validate that content as part of the product contract, and verify
+  the rendered notes together with release assets before declaring success;
+  retries verify existing asset digests before uploading only missing names.
+
 ## 0.0.4 - 2026-08-05
 
 - Activate a selected Decision's authored reusable inputs before material

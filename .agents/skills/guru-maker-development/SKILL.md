@@ -14,6 +14,11 @@ minimum files and tests that must move together. Keep this repository-local
 Skill under `.agents/skills/`; never add it to `skills/`, which is the exact
 five-Skill public plugin surface.
 
+For release work, prepare one non-empty `CHANGELOG.md` section for the exact
+version before tagging. Treat that section as the public GitHub Release body;
+do not rely only on generated notes. After the workflow completes, verify the
+published body and expected assets before reporting the release complete.
+
 Run `scripts/verify.sh` before handoff for material changes. Use
 `scripts/test-env.sh --keep` only to inspect an isolated failure fixture. Do
 not use a maintainer's Guru Maker projects, runtime installation, credentials,

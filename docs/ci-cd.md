@@ -39,13 +39,15 @@ tag starts validation and publication.
 
 The workflow:
 
-1. rejects a tag that differs from Cargo, Codex, Claude, or Runtime versions;
+1. rejects a tag that differs from Cargo, Codex, Claude, or Runtime versions,
+   or whose matching `CHANGELOG.md` section is absent, duplicated, or empty;
 2. repeats source validation;
 3. builds macOS ARM64/x86-64, Linux ARM64/x86-64, and Windows x86-64;
 4. executes each natively runnable binary and checks its version;
 5. creates raw wrapper-facing binaries and human-facing archives;
 6. generates one `SHA256SUMS`;
-7. creates the GitHub Release and uploads immutable assets.
+7. uses the matching versioned changelog section as the GitHub Release body
+   and uploads immutable assets.
 
 The publish job alone receives `contents: write`; all other jobs are
 read-only. GitHub Releases carries Runtime artifacts, while host marketplaces
@@ -63,7 +65,9 @@ shared/gurumaker/runtime/version
 ```
 
 Also move the relevant `CHANGELOG.md` entry out of `Unreleased` when preparing
-a public release. Validate before tagging:
+a public release. That versioned section is the canonical release body, so it
+must contain the user-facing changes rather than relying on generated notes.
+Validate before tagging:
 
 ```bash
 cargo fmt --check
@@ -73,9 +77,14 @@ cargo build --release --locked
 sh -n shared/gurumaker/scripts/gurumaker.sh
 ```
 
-Then commit, push, and push the exact matching tag. Published tags and release
-assets are immutable. If publication partially fails, inspect the existing
-release and repair deliberately.
+Then commit, push, and push the exact matching tag. After publication, verify
+both the rendered Release body and the expected assets. Published tags and
+release assets are immutable. If publication partially fails, inspect the
+existing release and repair deliberately; a workflow retry deterministically
+restores its body from the tagged changelog section, preserves already
+published assets, verifies their GitHub SHA-256 digests before uploading only
+missing names, and verifies the final name-and-digest set. A same-name digest
+mismatch requires deliberate manual repair rather than automatic replacement.
 
 ## Failure routing
 
@@ -87,6 +96,7 @@ release and repair deliberately.
 | Windows wrapper failure | `shared/gurumaker/scripts/gurumaker.ps1` |
 | Target build failure | release matrix target/toolchain setup |
 | Missing or renamed release asset | release packaging and `docs/runtime-distribution.md` |
+| Missing or incomplete release notes | matching `CHANGELOG.md` section and publish job |
 | Host discovers the wrong Skill | marketplace source, plugin cache, and fresh-session smoke |
 
 When adding a host or target, extend only the existing matrix and one

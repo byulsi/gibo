@@ -27,6 +27,49 @@ fn cargo_version() -> String {
 }
 
 #[test]
+fn release_publication_uses_the_versioned_changelog_entry() {
+    let version = cargo_version();
+    let changelog = fs::read_to_string(root().join("CHANGELOG.md")).unwrap();
+    let heading = format!("## {version} - ");
+    let matching_headings = changelog
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.starts_with(&heading))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        matching_headings.len(),
+        1,
+        "CHANGELOG.md must contain exactly one section for {version}"
+    );
+    let body = changelog
+        .lines()
+        .skip(matching_headings[0].0 + 1)
+        .take_while(|line| !line.starts_with("## "))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        body.lines().any(|line| line.starts_with("- ")),
+        "the {version} changelog section must contain public release notes"
+    );
+
+    let workflow = fs::read_to_string(root().join(".github/workflows/release.yml")).unwrap();
+    assert!(workflow.contains("CHANGELOG.md"));
+    assert!(workflow.contains("--notes-file"));
+    assert!(workflow.contains("gh release edit"));
+    assert!(workflow.contains("sha256sum \"$asset\""));
+    assert!(workflow.contains("[.name, .digest]"));
+    assert!(workflow.contains("test \"$asset_digest\" = \"$expected_digest\""));
+    assert!(workflow.contains("diff -u \"$LOCAL_ASSETS\" \"$PUBLISHED_ASSETS\""));
+    assert!(!workflow.contains("--generate-notes"));
+    assert!(!workflow.contains("--clobber"));
+
+    let development_skill =
+        fs::read_to_string(root().join(".agents/skills/guru-maker-development/SKILL.md")).unwrap();
+    assert!(development_skill.contains("public GitHub Release body"));
+    assert!(development_skill.contains("published body and expected assets"));
+}
+
+#[test]
 fn public_identity_and_runtime_version_are_synchronized() {
     let codex = json(".codex-plugin/plugin.json");
     let codex_marketplace = json(".agents/plugins/marketplace.json");

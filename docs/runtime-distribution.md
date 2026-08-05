@@ -119,8 +119,10 @@ never changed by that update.
 3. Commit the release-ready source.
 4. Create and push the exact `v<version>` tag.
 5. Let `.github/workflows/release.yml` validate, build, execute native target
-   smokes, generate `SHA256SUMS`, and create the GitHub Release.
-6. Install the released plugin in fresh Codex and Claude Code sessions and
+   smokes, generate `SHA256SUMS`, and create the GitHub Release using the
+   matching versioned `CHANGELOG.md` section as its body.
+6. Verify the published Release body and the complete asset set.
+7. Install the released plugin in fresh Codex and Claude Code sessions and
    invoke one command so the wrapper installs the pinned Runtime.
 
 CI creates the release after validation. Published tags and assets are

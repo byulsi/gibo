@@ -177,6 +177,9 @@ Before creating a release, update the same exact version in:
 
 Push an exact `v<version>` tag only after validation. The tag-driven release
 workflow builds raw binaries and user archives, verifies native targets,
-generates `SHA256SUMS`, and creates the GitHub Release. See
+generates `SHA256SUMS`, and creates the GitHub Release from the matching
+non-empty versioned `CHANGELOG.md` section. Do not rely only on generated
+notes. After publication, inspect both the rendered Release body and the full
+asset set before reporting success. See
 [Runtime distribution and updates](runtime-distribution.md) before changing
 targets, wrapper behavior, or release assets.

@@ -176,6 +176,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
       - name: Download build products
         uses: actions/download-artifact@v8
         with:
@@ -189,15 +194,77 @@ jobs:
           sha256sum gurumaker-* guru-maker-*.tar.gz guru-maker-*.zip \
             > SHA256SUMS
 
+      - name: Prepare release notes
+        env:
+          RELEASE_NOTES: ${{ runner.temp }}/release-notes.md
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          CHANGELOG_NOTES="${RELEASE_NOTES}.body"
+          awk -v heading="## ${RELEASE_VERSION} - " '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+            END { if (!found) exit 1 }
+          ' CHANGELOG.md > "$CHANGELOG_NOTES"
+          grep -q '[^[:space:]]' "$CHANGELOG_NOTES"
+          {
+            printf "## What's Changed\n\n"
+            cat "$CHANGELOG_NOTES"
+          } > "$RELEASE_NOTES"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_NOTES: ${{ runner.temp }}/release-notes.md
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1 || \
+          if gh release view "v${RELEASE_VERSION}" >/dev/null 2>&1; then
+            gh release edit "v${RELEASE_VERSION}" \
+              --verify-tag \
+              --notes-file "$RELEASE_NOTES" \
+              --title "Guru Maker v${RELEASE_VERSION}"
+          else
             gh release create "v${RELEASE_VERSION}" \
               --verify-tag \
-              --generate-notes \
+              --notes-file "$RELEASE_NOTES" \
               --title "Guru Maker v${RELEASE_VERSION}"
-          gh release upload "v${RELEASE_VERSION}" dist/*
+          fi
+
+          LOCAL_ASSETS="${RUNNER_TEMP}/local-assets.tsv"
+          for asset in dist/*; do
+            asset_name="$(basename "$asset")"
+            asset_digest="$(sha256sum "$asset" | awk '{ print $1 }')"
+            printf '%s\tsha256:%s\n' "$asset_name" "$asset_digest"
+          done | sort > "$LOCAL_ASSETS"
+
+          PUBLISHED_ASSETS="${RUNNER_TEMP}/published-assets.tsv"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/releases/tags/v${RELEASE_VERSION}" \
+            --jq '.assets[] | [.name, .digest] | @tsv' \
+            | sort > "$PUBLISHED_ASSETS"
+
+          while IFS=$'\t' read -r asset_name asset_digest; do
+            expected_digest="$(
+              awk -F '\t' -v name="$asset_name" \
+                '$1 == name { print $2 }' "$LOCAL_ASSETS"
+            )"
+            test -n "$expected_digest"
+            test "$asset_digest" = "$expected_digest"
+          done < "$PUBLISHED_ASSETS"
+
+          for asset in dist/*; do
+            asset_name="$(basename "$asset")"
+            if awk -F '\t' -v name="$asset_name" \
+              '$1 == name { found = 1 } END { exit !found }' \
+              "$PUBLISHED_ASSETS"; then
+              continue
+            fi
+            gh release upload "v${RELEASE_VERSION}" "$asset"
+          done
+
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/releases/tags/v${RELEASE_VERSION}" \
+            --jq '.assets[] | [.name, .digest] | @tsv' \
+            | sort > "$PUBLISHED_ASSETS"
+          diff -u "$LOCAL_ASSETS" "$PUBLISHED_ASSETS"
