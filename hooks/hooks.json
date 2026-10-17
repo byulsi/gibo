@@ -10,7 +10,7 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" pre-tool-use",
             "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\run-hook.ps1\" pre-tool-use",
             "timeout": 60,
-            "statusMessage": "Protecting installed Guru Packs"
+            "statusMessage": "Protecting installed Gibo Packs"
           }
         ]
       }

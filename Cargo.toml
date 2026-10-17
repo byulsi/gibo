@@ -1,19 +1,19 @@
 [package]
-name = "guru-maker"
-version = "0.0.4"
+name = "gibo"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.82"
-description = "Project-owned investment memory and Guru Pack CLI"
+description = "Gibo: project-owned investment memory and Gibo Pack CLI"
 license = "Apache-2.0"
 publish = false
 readme = "README.md"
-homepage = "https://github.com/monarchjuno/guru-maker"
-repository = "https://github.com/monarchjuno/guru-maker"
+homepage = "https://github.com/byulsi/gibo"
+repository = "https://github.com/byulsi/gibo"
 keywords = ["investment", "research", "knowledge", "agents"]
 categories = ["command-line-utilities", "finance"]
 
 [[bin]]
-name = "gurumaker"
+name = "gibo"
 path = "src/main.rs"
 
 [dependencies]

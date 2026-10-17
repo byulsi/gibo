@@ -4,10 +4,10 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SKILL_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 VERSION_FILE="$SKILL_DIR/runtime/version"
-RELEASE_BASE_URL=${GURUMAKER_RELEASE_BASE_URL:-https://github.com/monarchjuno/guru-maker/releases/download}
+RELEASE_BASE_URL=${GIBO_RELEASE_BASE_URL:-https://github.com/byulsi/gibo/releases/download}
 
 fail() {
-    printf 'Guru Maker runtime error: %s\n' "$1" >&2
+    printf 'Gibo runtime error: %s\n' "$1" >&2
     exit 1
 }
 
@@ -38,12 +38,12 @@ detect_target() {
 }
 
 runtime_home() {
-    if [ -n "${GURUMAKER_RUNTIME_HOME:-}" ]; then
-        printf '%s\n' "$GURUMAKER_RUNTIME_HOME"
+    if [ -n "${GIBO_RUNTIME_HOME:-}" ]; then
+        printf '%s\n' "$GIBO_RUNTIME_HOME"
     elif [ -n "${XDG_DATA_HOME:-}" ]; then
-        printf '%s\n' "$XDG_DATA_HOME/guru-maker/runtimes"
+        printf '%s\n' "$XDG_DATA_HOME/gibo/runtimes"
     elif [ -n "${HOME:-}" ]; then
-        printf '%s\n' "$HOME/.local/share/guru-maker/runtimes"
+        printf '%s\n' "$HOME/.local/share/gibo/runtimes"
     else
         fail "cannot resolve runtime home"
     fi
@@ -52,18 +52,18 @@ runtime_home() {
 version_matches() {
     [ -x "$1" ] || return 1
     output=$("$1" --version 2>/dev/null) || return 1
-    [ "$output" = "$RUNTIME_VERSION" ] || [ "$output" = "gurumaker $RUNTIME_VERSION" ]
+    [ "$output" = "$RUNTIME_VERSION" ] || [ "$output" = "gibo $RUNTIME_VERSION" ]
 }
 
 TARGET=$(detect_target)
 RUNTIME_HOME=$(runtime_home)
-MANAGED_RUNTIME="$RUNTIME_HOME/$RUNTIME_VERSION/$TARGET/gurumaker"
+MANAGED_RUNTIME="$RUNTIME_HOME/$RUNTIME_VERSION/$TARGET/gibo"
 
 find_runtime() {
-    if [ -n "${GURUMAKER_RUNTIME_BIN:-}" ]; then
-        version_matches "$GURUMAKER_RUNTIME_BIN" ||
-            fail "GURUMAKER_RUNTIME_BIN is not Guru Maker runtime $RUNTIME_VERSION"
-        printf '%s\n' "$GURUMAKER_RUNTIME_BIN"
+    if [ -n "${GIBO_RUNTIME_BIN:-}" ]; then
+        version_matches "$GIBO_RUNTIME_BIN" ||
+            fail "GIBO_RUNTIME_BIN is not Gibo runtime $RUNTIME_VERSION"
+        printf '%s\n' "$GIBO_RUNTIME_BIN"
         return 0
     fi
 
@@ -72,7 +72,7 @@ find_runtime() {
         return 0
     fi
 
-    path_runtime=$(command -v gurumaker 2>/dev/null || true)
+    path_runtime=$(command -v gibo 2>/dev/null || true)
     if [ -n "$path_runtime" ] && version_matches "$path_runtime"; then
         printf '%s\n' "$path_runtime"
         return 0
@@ -93,19 +93,19 @@ sha256_file() {
 install_runtime() {
     command -v curl >/dev/null 2>&1 || fail "curl is required to install the runtime"
 
-    artifact="gurumaker-$TARGET"
+    artifact="gibo-$TARGET"
     release_url="${RELEASE_BASE_URL%/}/v$RUNTIME_VERSION"
     destination_dir=$(dirname -- "$MANAGED_RUNTIME")
     mkdir -p "$destination_dir"
 
-    download_path="$destination_dir/.gurumaker.download.$$"
+    download_path="$destination_dir/.gibo.download.$$"
     checksums_path="$destination_dir/.SHA256SUMS.$$"
     cleanup() {
         rm -f "$download_path" "$checksums_path"
     }
     trap cleanup EXIT HUP INT TERM
 
-    printf 'Installing Guru Maker runtime %s for %s...\n' "$RUNTIME_VERSION" "$TARGET" >&2
+    printf 'Installing Gibo runtime %s for %s...\n' "$RUNTIME_VERSION" "$TARGET" >&2
     curl -fsSL "$release_url/SHA256SUMS" -o "$checksums_path" ||
         fail "could not download SHA256SUMS for v$RUNTIME_VERSION"
     expected=$(
@@ -128,7 +128,7 @@ install_runtime() {
     rm -f "$checksums_path"
     trap - EXIT HUP INT TERM
 
-    printf 'Installed Guru Maker runtime at %s\n' "$MANAGED_RUNTIME" >&2
+    printf 'Installed Gibo runtime at %s\n' "$MANAGED_RUNTIME" >&2
     printf '%s\n' "$MANAGED_RUNTIME"
 }
 

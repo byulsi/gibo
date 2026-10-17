@@ -53,7 +53,7 @@ pub fn scan(root: &Path) -> (Vec<GraphNode>, Vec<GraphEdge>, RenderStats) {
     let unresolved = raw_count_unresolved(&unique, &edges, &raw);
     let nodes = unique.into_values().collect::<Vec<_>>();
     let stats = RenderStats {
-        output: display(&root.join("guru-maker/decision-graph.html"), root),
+        output: display(&root.join("gibo/decision-graph.html"), root),
         nodes: nodes.len(),
         edges: edges.len(),
         skipped_files: skipped,
@@ -66,7 +66,7 @@ pub fn render(root: &Path, output: Option<&Path>) -> std::io::Result<RenderStats
     let (nodes, edges, mut stats) = scan(root);
     let path = output
         .map(PathBuf::from)
-        .unwrap_or_else(|| root.join("guru-maker/decision-graph.html"));
+        .unwrap_or_else(|| root.join("gibo/decision-graph.html"));
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?
     }
@@ -184,7 +184,7 @@ fn display(path: &Path, root: &Path) -> String {
 
 fn html(payload: &str) -> String {
     format!(
-        r#"<!doctype html><meta charset="utf-8"><title>Guru Maker Decision Graph</title><style>body{{font:14px system-ui;margin:0;background:#f6f7f9;color:#172033}}header{{padding:20px 24px;background:#172033;color:#fff}}main{{padding:20px 24px}}svg{{width:100%;min-height:360px;background:#fff;border:1px solid #d9deea}}article{{background:#fff;border:1px solid #d9deea;padding:12px;margin-top:12px}}</style><header><h1>Decision Graph</h1><p id=s></p></header><main><svg id=g viewBox="0 0 1000 600"></svg><section id=d></section></main><script>const graph={payload},svg=document.querySelector('#g'),details=document.querySelector('#d'),cols=Math.max(1,Math.ceil(Math.sqrt(graph.nodes.length||1))),pos=new Map(graph.nodes.map((n,i)=>[n.id,{{x:90+i%cols*220,y:70+Math.floor(i/cols)*150}}]));s.textContent=`${{graph.nodes.length}} nodes · ${{graph.edges.length}} explicit relationships`;for(const e of graph.edges){{let a=pos.get(e.source),b=pos.get(e.target);if(!a||!b)continue;let l=document.createElementNS('http://www.w3.org/2000/svg','line');for(const[k,v]of Object.entries({{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#9da9be'}}))l.setAttribute(k,v);svg.append(l)}}for(const n of graph.nodes){{let p=pos.get(n.id),t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',p.x);t.setAttribute('y',p.y);t.textContent=n.title;svg.append(t);let a=document.createElement('article');a.textContent=`${{n.kind}} · ${{n.id}} — ${{n.summary}}`;details.append(a)}}</script>"#
+        r#"<!doctype html><meta charset="utf-8"><title>Gibo Decision Graph</title><style>body{{font:14px system-ui;margin:0;background:#f6f7f9;color:#172033}}header{{padding:20px 24px;background:#172033;color:#fff}}main{{padding:20px 24px}}svg{{width:100%;min-height:360px;background:#fff;border:1px solid #d9deea}}article{{background:#fff;border:1px solid #d9deea;padding:12px;margin-top:12px}}</style><header><h1>Decision Graph</h1><p id=s></p></header><main><svg id=g viewBox="0 0 1000 600"></svg><section id=d></section></main><script>const graph={payload},svg=document.querySelector('#g'),details=document.querySelector('#d'),cols=Math.max(1,Math.ceil(Math.sqrt(graph.nodes.length||1))),pos=new Map(graph.nodes.map((n,i)=>[n.id,{{x:90+i%cols*220,y:70+Math.floor(i/cols)*150}}]));s.textContent=`${{graph.nodes.length}} nodes · ${{graph.edges.length}} explicit relationships`;for(const e of graph.edges){{let a=pos.get(e.source),b=pos.get(e.target);if(!a||!b)continue;let l=document.createElementNS('http://www.w3.org/2000/svg','line');for(const[k,v]of Object.entries({{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#9da9be'}}))l.setAttribute(k,v);svg.append(l)}}for(const n of graph.nodes){{let p=pos.get(n.id),t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',p.x);t.setAttribute('y',p.y);t.textContent=n.title;svg.append(t);let a=document.createElement('article');a.textContent=`${{n.kind}} · ${{n.id}} — ${{n.summary}}`;details.append(a)}}</script>"#
     )
 }
 
@@ -196,16 +196,16 @@ mod tests {
     #[test]
     fn graph_has_only_valid_explicit_edges_and_safe_offline_html() {
         let root = std::env::temp_dir().join(format!(
-            "guru-maker-graph-{}",
+            "gibo-graph-{}",
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
         ));
-        let evidence = root.join("guru-maker/evidence/e.md");
+        let evidence = root.join("gibo/evidence/e.md");
         fs::create_dir_all(evidence.parent().unwrap()).unwrap();
         fs::write(&evidence,"---\nid: evidence:e\ntitle: </script><img>\nsummary: evidence\nas_of: 2026-01-01T00:00:00Z\nsource: https://example.test/source\n---").unwrap();
-        let decision = root.join("guru-maker/decision/d.md");
+        let decision = root.join("gibo/decision/d.md");
         fs::create_dir_all(decision.parent().unwrap()).unwrap();
         fs::write(
             decision,

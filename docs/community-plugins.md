@@ -1,16 +1,16 @@
-# Guru Packs
+# Gibo Packs
 
-A Guru Pack is a GitHub transport and provenance unit for exactly one reusable
+A Gibo Pack is a GitHub transport and provenance unit for exactly one reusable
 memory kind: `wiki`, `lens`, or `method`. A project may install at most one
 source Pack for each kind.
 
 ## Repository contract
 
-The repository root contains `guru-pack.json` and the declared Markdown
+The repository root contains `gibo-pack.json` and the declared Markdown
 elements. Their hierarchy is preserved without an additional Pack wrapper:
 
 ```text
-guru-pack.json
+gibo-pack.json
 industry/
   semiconductor-cycle.md
 supply-chain.md
@@ -43,7 +43,7 @@ does not create a Decision Graph edge or hidden context dependency.
 ## Installation
 
 ```bash
-gurumaker pack install https://github.com/owner/wiki-pack.git
+gibo pack install https://github.com/owner/wiki-pack.git
 ```
 
 Installation clones and validates the repository in a temporary location. It
@@ -51,8 +51,8 @@ then stores the clean source checkout in the kind slot and seeds the local
 collection once:
 
 ```text
-.guru-maker/packs/wiki/   exact Git source
-guru-maker/wiki/          project-owned working elements
+.gibo/packs/wiki/   exact Git source
+gibo/wiki/          project-owned working elements
 ```
 
 Installation fails without partial state when either the kind slot already
@@ -66,10 +66,10 @@ never enters agent context.
 ## Lifecycle
 
 ```bash
-gurumaker pack list
-gurumaker pack inspect wiki
-gurumaker pack update wiki
-gurumaker pack remove wiki
+gibo pack list
+gibo pack inspect wiki
+gibo pack update wiki
+gibo pack remove wiki
 ```
 
 `update` changes only the clean hidden Git source. It never overwrites,
@@ -83,11 +83,11 @@ explicitly clears or moves the existing local memory.
 ## Creation and publication
 
 ```bash
-gurumaker pack create wiki ./wiki-pack \
-  --element ./guru-maker/wiki/semiconductor-cycle.md \
-  --element ./guru-maker/wiki/supply-chain.md
+gibo pack create wiki ./wiki-pack \
+  --element ./gibo/wiki/semiconductor-cycle.md \
+  --element ./gibo/wiki/supply-chain.md
 
-gurumaker pack check ./wiki-pack
+gibo pack check ./wiki-pack
 ```
 
 Creation copies only explicitly selected elements from the matching local

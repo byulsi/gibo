@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 - 2026-10-17
+
+First Gibo release, based on Guru Maker 0.0.4 and its unreleased changes.
+
+- Rename the product to Gibo for Claude Code: the `gibo` plugin and Runtime,
+  `/gibo:research`, `/gibo:memory`, `/gibo:decision`, `/gibo:train`, and
+  `/gibo:packs` skills, `gibo/` memory and `.gibo/` settings folders, and
+  `GIBO_*` environment variables.
+- Rename Guru Mode to Record Mode and Guru Packs to Gibo Packs. Packs use
+  `gibo-pack.json`; Packs published with Guru Maker's `guru-pack.json` can
+  still be checked and installed.
+- Remove Codex plugin metadata, the Codex agent evaluation harness, and the
+  contributor license agreement.
+
+The entries below are Guru Maker's history before Gibo.
+
+## Guru Maker Unreleased
 
 - Publish each GitHub Release body from its matching versioned changelog
   section, validate that content as part of the product contract, and verify

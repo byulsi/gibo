@@ -8,13 +8,13 @@ $ErrorActionPreference = "Stop"
 $current = (Get-Location).Path
 
 while ($true) {
-    $memory = Join-Path $current "guru-maker"
-    $marker = Join-Path $current ".guru-maker/.gitignore"
+    $memory = Join-Path $current "gibo"
+    $marker = Join-Path $current ".gibo/.gitignore"
     if (
         (Test-Path -LiteralPath $memory -PathType Container) -and
         (Test-Path -LiteralPath $marker -PathType Leaf)
     ) {
-        $env:GURUMAKER_HOOK_WORKSPACE = $current
+        $env:GIBO_HOOK_WORKSPACE = $current
         $pluginRoot = if ($env:CLAUDE_PLUGIN_ROOT) {
             $env:CLAUDE_PLUGIN_ROOT
         } else {
@@ -23,7 +23,7 @@ while ($true) {
         if (-not $pluginRoot) {
             throw "Gibo hook error: plugin root is unavailable"
         }
-        $wrapper = Join-Path $pluginRoot "shared/gurumaker/scripts/gurumaker.ps1"
+        $wrapper = Join-Path $pluginRoot "shared/gibo/scripts/gibo.ps1"
         & $wrapper hook $Event
         exit $LASTEXITCODE
     }

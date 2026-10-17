@@ -190,7 +190,7 @@ pub struct KnowledgeHealth {
 }
 
 pub fn infer_kind(path: &Path, root: &Path) -> String {
-    let base = root.join("guru-maker");
+    let base = root.join("gibo");
     path.strip_prefix(&base)
         .ok()
         .and_then(|p| p.components().next())
@@ -727,7 +727,7 @@ fn subject_folders(doc: &Document) -> Vec<String> {
     let components = doc.path.split('/').collect::<Vec<_>>();
     let start = components
         .windows(2)
-        .position(|window| window == ["guru-maker", doc.kind.as_str()])
+        .position(|window| window == ["gibo", doc.kind.as_str()])
         .map_or(components.len(), |index| index + 2);
     components
         .get(start..components.len().saturating_sub(1))
@@ -1283,7 +1283,7 @@ pub fn relationship_target_allowed(source: &str, relationship: &str, target: &st
 fn layout_issues(root: &Path) -> Vec<KnowledgeIssue> {
     let mut issues = Vec::new();
     for kind in KNOWLEDGE_KINDS {
-        let directory = root.join("guru-maker").join(kind);
+        let directory = root.join("gibo").join(kind);
         if let Ok(metadata) = fs::symlink_metadata(&directory) {
             if metadata.file_type().is_symlink() || !metadata.is_dir() {
                 issues.push(KnowledgeIssue {
@@ -1344,7 +1344,7 @@ fn local_markdown_files_for_kinds(root: &Path, kinds: &[String]) -> Vec<PathBuf>
         kinds.iter().map(String::as_str).collect::<BTreeSet<_>>()
     };
     for dir in directories {
-        collect_markdown_files(&root.join("guru-maker").join(dir), &mut out);
+        collect_markdown_files(&root.join("gibo").join(dir), &mut out);
     }
     out.sort();
     out
@@ -1965,7 +1965,7 @@ mod tests {
 
     fn root() -> PathBuf {
         std::env::temp_dir().join(format!(
-            "guru-maker-knowledge-{}-{}-{}",
+            "gibo-knowledge-{}-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -2002,20 +2002,20 @@ mod tests {
         let root = root();
         write(
             &root,
-            "guru-maker/lens/a.md",
+            "gibo/lens/a.md",
             "---\nid: duplicate\ntitle: A\nsummary: A\nas_of: 2026-01-01T00:00Z\n---",
         );
         write(
             &root,
-            "guru-maker/method/b.md",
+            "gibo/method/b.md",
             "---\nid: duplicate\ntitle: B\nsummary: B\nas_of: 2026-01-01T00:00:00Z\n---",
         );
         write(
             &root,
-            "guru-maker/evidence/e.md",
+            "gibo/evidence/e.md",
             "---\nid: e\ntitle: E\nsummary: E\nas_of: 2026-01-01T00:00:00Z\n---",
         );
-        write(&root, "guru-maker/wiki/plain.md", "# no frontmatter\n");
+        write(&root, "gibo/wiki/plain.md", "# no frontmatter\n");
         let check = check(&root);
         assert!(!check.valid);
         assert!(check
@@ -2032,7 +2032,7 @@ mod tests {
         let root = root();
         write(
             &root,
-            "guru-maker/wiki/a.md",
+            "gibo/wiki/a.md",
             "---\nid: wiki:a\ntitle: A\nsummary: A\nas_of: 2026-01-01T00:00:00Z\n---\n# Chosen\nBody",
         );
         let result = read(&root, "wiki:a", Some("Chosen")).unwrap();
@@ -2044,7 +2044,7 @@ mod tests {
         let root = root();
         write(
             &root,
-            "guru-maker/evidence/cash-flow.md",
+            "gibo/evidence/cash-flow.md",
             "---\nid: evidence:cash-flow\ntitle: Cash generation\nsummary: Quarterly observation.\nas_of: 2026-07-27T09:00:00Z\nsource: https://example.com/report\nperiod: 2026-Q2\ntags:\n  - free-cash-flow\n---\n\n# Observation\nConversion improved.",
         );
 
@@ -2062,12 +2062,12 @@ mod tests {
         let root = root();
         write(
             &root,
-            "guru-maker/wiki/older.md",
+            "gibo/wiki/older.md",
             "---\nid: wiki:older\ntitle: Older signal\nsummary: Cash flow signal.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# First\nCash flow.\n\n# Second\nCash flow.",
         );
         write(
             &root,
-            "guru-maker/wiki/newer.md",
+            "gibo/wiki/newer.md",
             "---\nid: wiki:newer\ntitle: Newer signal\nsummary: Cash flow signal.\nas_of: 2026-07-01T00:00:00Z\n---\n\n# First\nCash flow.\n\n# Second\nCash flow.",
         );
 
@@ -2094,7 +2094,7 @@ mod tests {
             };
             write(
                 &root,
-                &format!("guru-maker/wiki/record-{index:03}.md"),
+                &format!("gibo/wiki/record-{index:03}.md"),
                 &format!(
                     "---\nid: wiki:record-{index:03}\ntitle: Record {index:03}\nsummary: Common liquidity observation.\nas_of: 2026-01-01T00:00:00Z\n{special}---\n\n# Common liquidity\nBroad liquidity context for record {index}.\n\n# Detail\nRecord-specific detail {index}. {numeric}"
                 ),
@@ -2102,32 +2102,32 @@ mod tests {
         }
         write(
             &root,
-            "guru-maker/lens/union.md",
+            "gibo/lens/union.md",
             "---\nid: lens:union\ntitle: Union signal lens\nsummary: A repeated-kind filter target.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Application\nUnion signal.",
         );
         write(
             &root,
-            "guru-maker/evidence/excluded.md",
+            "gibo/evidence/excluded.md",
             "---\nid: evidence:excluded\ntitle: Union signal evidence\nsummary: An excluded repeated-kind target.\nas_of: 2026-01-01T00:00:00Z\nsource: https://example.test/excluded\n---\n\n# Observation\nUnion signal.",
         );
         write(
             &root,
-            "guru-maker/lens/legacy.md",
+            "gibo/lens/legacy.md",
             "---\nid: custom:legacy\ntitle: Legacy identifier\nsummary: Exact-read fallback fixture.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Detail\nFallback body.",
         );
         write(
             &root,
-            "guru-maker/lens/misplaced.md",
+            "gibo/lens/misplaced.md",
             "---\nid: wiki:misplaced\ntitle: Misplaced identifier\nsummary: Known-prefix read fallback fixture.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Detail\nKnown-prefix fallback body.",
         );
         write(
             &root,
-            "guru-maker/wiki/a-duplicate.md",
+            "gibo/wiki/a-duplicate.md",
             "---\nid: wiki:duplicate\ntitle: Duplicate loser\nsummary: A duplicate winner query appears only in summary.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Notes\nDuplicate winner.",
         );
         write(
             &root,
-            "guru-maker/wiki/z-duplicate.md",
+            "gibo/wiki/z-duplicate.md",
             "---\nid: wiki:duplicate\ntitle: Duplicate winner\nsummary: The higher-ranked duplicate.\nas_of: 2026-01-01T00:00:00Z\n---\n\n# Notes\nWinner body.",
         );
 
@@ -2272,13 +2272,13 @@ mod tests {
             "outside/escaped.md",
             "---\nid: escaped\ntitle: Escaped\nsummary: Escaped\nas_of: 2026-01-01T00:00:00Z\n---",
         );
-        let wiki = root.join("guru-maker/wiki");
+        let wiki = root.join("gibo/wiki");
         fs::create_dir_all(&wiki).unwrap();
         symlink(&outside, wiki.join("escaped-directory")).unwrap();
         symlink(outside.join("escaped.md"), wiki.join("escaped-file.md")).unwrap();
         symlink(&wiki, wiki.join("loop")).unwrap();
-        fs::create_dir_all(root.join("guru-maker")).unwrap();
-        symlink(&outside, root.join("guru-maker/lens")).unwrap();
+        fs::create_dir_all(root.join("gibo")).unwrap();
+        symlink(&outside, root.join("gibo/lens")).unwrap();
 
         assert!(catalog_local(&root).is_empty());
         assert_eq!(check(&root).errors.len(), 4);
@@ -2290,22 +2290,22 @@ mod tests {
         let root = root();
         write(
             &root,
-            "guru-maker/wiki/w.md",
+            "gibo/wiki/w.md",
             "---\nid: wiki:w\ntitle: W\nsummary: W\nas_of: 2026-01-01T00:00:00Z\nuses:\n  - method:m\n---",
         );
         write(
             &root,
-            "guru-maker/method/m.md",
+            "gibo/method/m.md",
             "---\nid: method:m\ntitle: M\nsummary: M\nas_of: 2026-01-01T00:00:00Z\n---",
         );
         write(
             &root,
-            "guru-maker/evidence/e.md",
+            "gibo/evidence/e.md",
             "---\nid: evidence:e\ntitle: E\nsummary: E\nas_of: 2026-01-01T00:00:00Z\nsource: https://example.test/e\nupdates:\n  - method:m\n---",
         );
         write(
             &root,
-            "guru-maker/decision/d.md",
+            "gibo/decision/d.md",
             "---\nid: decision:d\ntitle: D\nsummary: D\nas_of: 2026-01-01T00:00:00Z\nuses:\n  - method:m\nsupports:\n  - evidence:e\nupdates:\n  - decision:missing\n---",
         );
         let result = check(&root);

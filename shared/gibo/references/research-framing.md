@@ -15,8 +15,8 @@ authorization; do not turn a vague request for analysis into action intent.
 If no referent and no supplied artifact exists, ask for the missing subject or
 material immediately without scanning project files or memory.
 
-That routing rule applies to ordinary source files outside `guru-maker/`. A
-retained Evidence record under `guru-maker/` is project memory and must be
+That routing rule applies to ordinary source files outside `gibo/`. A
+retained Evidence record under `gibo/` is project memory and must be
 retrieved through the Runtime even when it is current or originated from the
 user.
 

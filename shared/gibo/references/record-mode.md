@@ -1,15 +1,15 @@
-# Guru Mode
+# Record Mode
 
-Guru Mode controls whether a host agent may improve local project memory during
+Record Mode controls whether a host agent may improve local project memory during
 an ordinary user-invoked investment task matched by a public Gibo Skill,
 including a natural-language task that never names Gibo. It does not
 change research quality, read-only retrieval, native host permissions, or the
-explicit boundaries for Guru Packs, Git, external execution, and project
+explicit boundaries for Gibo Packs, Git, external execution, and project
 initialization.
 It is a behavioral policy for the host agent, not a filesystem permission or
 security boundary.
 
-Separate write authorization from memory eligibility. Guru Mode determines
+Separate write authorization from memory eligibility. Record Mode determines
 whether an otherwise eligible change may be written; the fitting public Skill
 and record contract determine what qualifies as investment memory. Neither
 Auto nor an explicit request turns unrelated personal preferences,
@@ -17,18 +17,18 @@ presentation defaults, instructions, or conversation content into eligible
 memory. A convention qualifies only when reviewed as a repeatable investment
 Method with an analytical rationale, applicability, and limits.
 
-An initialized project stores the mode in `.guru-maker/mode`. Read it before the
+An initialized project stores the mode in `.gibo/mode`. Read it before the
 first possible memory write:
 
 ```text
-gurumaker mode --workspace <project-root>
+gibo mode --workspace <project-root>
 ```
 
 Set it only after an explicit user request:
 
 ```text
-gurumaker mode auto --workspace <project-root>
-gurumaker mode off --workspace <project-root>
+gibo mode auto --workspace <project-root>
+gibo mode off --workspace <project-root>
 ```
 
 `auto` is the default for new and legacy projects. A task-specific user

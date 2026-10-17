@@ -12,7 +12,7 @@ cargo build --release --locked
 python3 -m json.tool .claude-plugin/plugin.json >/dev/null
 python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
 python3 -m json.tool hooks/hooks.json >/dev/null
-sh -n shared/gurumaker/scripts/gurumaker.sh
+sh -n shared/gibo/scripts/gibo.sh
 sh -n hooks/run-hook.sh
 sh -n scripts/test-env.sh
 scripts/test-env.sh

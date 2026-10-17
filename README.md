@@ -18,8 +18,10 @@ Claude Code용으로 고친 프로젝트입니다. Guru Maker 프로젝트와는
 | 지원 환경 | Codex, Claude Code | Claude Code 전용 |
 | 스킬 호출 | `/guru-maker:guru-research` | `/gibo:research` |
 | 데이터 연결 | 없음 (호스트에 맡김) | 공신력 있는 출처(공시, 거래소, 거시 데이터) 연결 예정 |
-| 기록 형식 | `guru-maker/` Markdown | 같음. Guru Maker 기록과 호환 |
-| 실행 파일 | `gurumaker` Rust Runtime | 같은 Runtime을 그대로 사용 |
+| 기록 폴더 | `guru-maker/` | `gibo/`. 기록 파일 형식은 같음 |
+| 실행 파일 | `gurumaker` | `gibo` |
+| 기록 스위치 | Guru Mode | Record Mode |
+| 기록 공유 묶음 | Guru Pack | Gibo Pack. Guru Pack도 설치 가능 |
 
 ## 기록 다섯 가지
 
@@ -39,10 +41,10 @@ Decision은 나중에 고쳐 쓰지 않습니다. 회고는 새 기록으로 남
 | 스킬 | 쓰임 |
 | --- | --- |
 | `/gibo:research` | 최신 자료와 프로젝트 기록으로 리서치 |
-| `/gibo:memory` | 초기화, 기록 찾기·저장·정리, Guru Mode 변경 |
+| `/gibo:memory` | 초기화, 기록 찾기·저장·정리, Record Mode 변경 |
 | `/gibo:decision` | 투자 판단 기록과 결과 회고 |
 | `/gibo:train` | 회고에서 교훈을 뽑아 반례로 검증 |
-| `/gibo:packs` | GitHub로 공유하는 기록 묶음(Guru Pack) 관리 |
+| `/gibo:packs` | GitHub로 공유하는 기록 묶음(Gibo Pack) 관리 |
 
 초기화된 프로젝트에서는 스킬 이름을 부르지 않고 평소처럼 질문해도 알맞은
 스킬이 쓰입니다.
@@ -59,8 +61,7 @@ Decision은 나중에 고쳐 쓰지 않습니다. 회고는 새 기록으로 남
 - [판단 기록과 그래프](docs/decision-memory.md)
 - [구조와 제품 범위](docs/architecture.md)
 
-상세 문서는 아직 Guru Maker 원문 그대로입니다. 문서 속 `guru-research` 같은
-스킬 이름은 Gibo에서 `research`로 바뀌었습니다.
+상세 문서는 영어로 되어 있습니다.
 
 ## 면책
 

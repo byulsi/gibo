@@ -4,7 +4,7 @@ use std::process::{Command, Output};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_gurumaker")
+    env!("CARGO_BIN_EXE_gibo")
 }
 
 fn temp_dir(label: &str) -> PathBuf {
@@ -13,7 +13,7 @@ fn temp_dir(label: &str) -> PathBuf {
         .unwrap()
         .as_nanos();
     let path = std::env::temp_dir().join(format!(
-        "guru-maker-retrieval-eval-{label}-{}-{nonce}",
+        "gibo-retrieval-eval-{label}-{}-{nonce}",
         std::process::id()
     ));
     fs::create_dir_all(&path).unwrap();
@@ -34,7 +34,7 @@ fn write_record(
     body: &str,
 ) {
     let path = root
-        .join("guru-maker")
+        .join("gibo")
         .join(kind)
         .join(format!("{}.md", id.replace(':', "-")));
     fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -372,7 +372,7 @@ fn representative_candidate_recall_and_no_match_precision() {
         no_match_queries.len()
     );
 
-    let baseline_binary = std::env::var("GURUMAKER_RETRIEVAL_BASELINE_BIN").ok();
+    let baseline_binary = std::env::var("GIBO_RETRIEVAL_BASELINE_BIN").ok();
     let full_binary = baseline_binary.as_deref().unwrap_or(bin());
     let (full_bytes, compact_bytes) = cases.iter().fold(
         (0_usize, 0_usize),
@@ -457,7 +457,7 @@ fn five_hundred_document_search_stays_bounded() {
         "fixture-444",
         "fixture-499",
     ];
-    let baseline_binary = std::env::var("GURUMAKER_RETRIEVAL_BASELINE_BIN").ok();
+    let baseline_binary = std::env::var("GIBO_RETRIEVAL_BASELINE_BIN").ok();
     timed_search(bin(), &root, queries[0], true);
     if let Some(baseline_binary) = baseline_binary {
         timed_search(&baseline_binary, &root, queries[0], false);

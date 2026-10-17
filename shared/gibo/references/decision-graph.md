@@ -1,7 +1,7 @@
 # Decision Graph contract
 
-`gurumaker graph` scans only local elements under `guru-maker/` and writes
-`guru-maker/decision-graph.html`.
+`gibo graph` scans only local elements under `gibo/` and writes
+`gibo/decision-graph.html`.
 
 Valid analytical edges are:
 

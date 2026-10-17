@@ -98,8 +98,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "guru-maker"
-version = "0.0.4"
+name = "gibo"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "regex",

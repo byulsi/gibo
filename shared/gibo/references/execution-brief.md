@@ -5,8 +5,8 @@ for the brief. It is a copyable external Markdown document, not an order and
 not an execution mechanism.
 
 Write the requested brief as an ordinary project Markdown artifact outside
-`guru-maker/`. Use the user's path when supplied; otherwise choose a concise,
-descriptive, collision-safe filename. Guru Mode governs Guru memory, not this
+`gibo/`. Use the user's path when supplied; otherwise choose a concise,
+descriptive, collision-safe filename. Record Mode governs Gibo memory, not this
 requested handoff artifact. Creating the brief does not create a Decision,
 authorize execution, or imply that any external action occurred.
 

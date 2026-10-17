@@ -1,6 +1,6 @@
 # Knowledge Model
 
-Guru Maker stores investment memory as ordinary project Markdown. A project
+Gibo stores investment memory as ordinary project Markdown. A project
 owns one collection of each memory kind, and each collection contains any
 number of hierarchically organized Markdown elements:
 
@@ -18,7 +18,7 @@ number of hierarchically organized Markdown elements:
 ## Project layout
 
 ```text
-guru-maker/
+gibo/
   wiki/
   lens/
   method/
@@ -26,7 +26,7 @@ guru-maker/
   decision/
   decision-graph.html
 
-.guru-maker/
+.gibo/
   .gitignore
   mode          auto or off
   packs/
@@ -208,16 +208,16 @@ validated separately and never becomes one of these edges.
 ## Retrieval
 
 ```bash
-gurumaker knowledge list --kind evidence
-gurumaker knowledge search "HBM packaging" --kind wiki --kind method --candidates --limit 6
-gurumaker knowledge read wiki:semiconductor-advanced-packaging --section "Value chain"
-gurumaker knowledge neighbors wiki:semiconductor-advanced-packaging
-gurumaker knowledge health --kind wiki
-gurumaker knowledge check
+gibo knowledge list --kind evidence
+gibo knowledge search "HBM packaging" --kind wiki --kind method --candidates --limit 6
+gibo knowledge read wiki:semiconductor-advanced-packaging --section "Value chain"
+gibo knowledge neighbors wiki:semiconductor-advanced-packaging
+gibo knowledge health --kind wiki
+gibo knowledge check
 ```
 
-Search scans only local `guru-maker/` elements. Installed source checkouts
-under `.guru-maker/packs/` are never searched or placed in context. An
+Search scans only local `gibo/` elements. Installed source checkouts
+under `.gibo/packs/` are never searched or placed in context. An
 installed Pack seeds local memory once; the local copy then behaves like any
 other project-owned element.
 
@@ -276,8 +276,7 @@ begins with one compact target query so existing Evidence and Decisions can
 inform the work. Narrow facts, clearly unrelated tasks, and uninitialized
 projects skip it. When prior Decisions and current Evidence could both matter,
 leave the first query unscoped rather than splitting it into kind-specific
-passes. This natural-language routing does not require the user to name Guru
-Maker or a public Skill.
+passes. This natural-language routing does not require the user to name Gibo or a public Skill.
 
 Candidate selection is followed by a bounded activation pass for material
 work. If a selected Decision materially informs the answer, exact-read the
@@ -305,7 +304,7 @@ or a directly read and applied reusable record. Otherwise mark it illustrative
 or unresolved. A new Decision lists only the `uses` and `supports` records
 directly read and materially applied.
 
-If Guru Mode permits that Decision write but the initial mixed candidates
+If Record Mode permits that Decision write but the initial mixed candidates
 contain no plausibly applicable Decision, run one same-intent Decision-only
 candidate search first. It protects duplicate detection and authored lineage
 when Evidence fills the mixed Top-6; it is separate from the one reusable-role
@@ -357,13 +356,13 @@ Evidence source-period-entity candidates, and forked Decision revision chains.
 More than five authored `see_also` targets is excessive Wiki navigation.
 `scale` requests performance evaluation; it does not authorize an index.
 
-## Guru Mode
+## Record Mode
 
-`gurumaker mode [auto|off]` reads or explicitly changes `.guru-maker/mode`.
+`gibo mode [auto|off]` reads or explicitly changes `.gibo/mode`.
 `auto` is the default and permits only minimum, durable, reviewable memory
 improvements during an ordinary task in an initialized project. The host may
 select the fitting Skill, use relevant memory, and retain an eligible result
-without the user naming Guru Maker, choosing a record kind, or separately
+without the user naming Gibo, choosing a record kind, or separately
 asking to save. `off` keeps research and analysis read-only unless the user
 explicitly asks to retain, correct, update, record, or run a reviewed training
 write. Neither mode makes initialization, Pack lifecycle, Git, or external

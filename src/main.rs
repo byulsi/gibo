@@ -12,7 +12,7 @@ fn main() {
         return;
     }
     if let Err(error) = cli::run(arguments) {
-        eprintln!("gurumaker: {error}");
+        eprintln!("gibo: {error}");
         std::process::exit(1);
     }
 }
@@ -21,17 +21,17 @@ fn run_hook(arguments: &[String]) {
     use std::io::Read;
 
     let Some(event) = arguments.first() else {
-        eprintln!("gurumaker: usage: gurumaker hook <pre-tool-use|post-tool-use>");
+        eprintln!("gibo: usage: gibo hook <pre-tool-use|post-tool-use>");
         std::process::exit(1);
     };
     if arguments.len() != 1 {
-        eprintln!("gurumaker: usage: gurumaker hook <pre-tool-use|post-tool-use>");
+        eprintln!("gibo: usage: gibo hook <pre-tool-use|post-tool-use>");
         std::process::exit(1);
     }
 
     let mut input = String::new();
     if let Err(error) = std::io::stdin().read_to_string(&mut input) {
-        eprintln!("gurumaker: could not read hook input: {error}");
+        eprintln!("gibo: could not read hook input: {error}");
         std::process::exit(1);
     }
     match hooks::evaluate(event, &input) {
@@ -42,7 +42,7 @@ fn run_hook(arguments: &[String]) {
         }
         Ok(hooks::Outcome::Feedback(output)) => println!("{output}"),
         Err(error) => {
-            eprintln!("gurumaker: {error}");
+            eprintln!("gibo: {error}");
             std::process::exit(1);
         }
     }

@@ -5,7 +5,7 @@ use std::process::{Command, Output, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_gurumaker")
+    env!("CARGO_BIN_EXE_gibo")
 }
 
 fn temp_dir(label: &str) -> PathBuf {
@@ -13,8 +13,7 @@ fn temp_dir(label: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let path =
-        std::env::temp_dir().join(format!("guru-maker-{label}-{}-{nonce}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("gibo-{label}-{}-{nonce}", std::process::id()));
     fs::create_dir_all(&path).unwrap();
     path
 }
@@ -38,7 +37,7 @@ fn mapped_command(arguments: &[&str], source: &Path, url: &str) -> Output {
 fn hook(workspace: &Path, event: &str, input: &serde_json::Value) -> Output {
     let mut child = Command::new(bin())
         .args(["hook", event])
-        .env("GURUMAKER_HOOK_WORKSPACE", workspace)
+        .env("GIBO_HOOK_WORKSPACE", workspace)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -98,7 +97,7 @@ fn source_repository(root: &Path, kind: &str, filename: &str, id: &str) -> PathB
     fs::create_dir_all(&source).unwrap();
     git(&source, &["init"]);
     git(&source, &["config", "user.email", "tests@example.invalid"]);
-    git(&source, &["config", "user.name", "Guru tests"]);
+    git(&source, &["config", "user.name", "Gibo tests"]);
     let element_path = source.join(filename);
     fs::create_dir_all(element_path.parent().unwrap()).unwrap();
     fs::write(
@@ -107,7 +106,7 @@ fn source_repository(root: &Path, kind: &str, filename: &str, id: &str) -> PathB
     )
     .unwrap();
     fs::write(
-        source.join("guru-pack.json"),
+        source.join("gibo-pack.json"),
         format!(
             "{{\n  \"schema_version\": 1,\n  \"kind\": \"{kind}\",\n  \"elements\": [\"{filename}\"]\n}}\n"
         ),
@@ -124,24 +123,24 @@ fn init_creates_singular_memory_and_pack_directories() {
     let output = command(&["init", root.to_str().unwrap(), "--json"]);
     assert!(output.status.success());
     for directory in ["wiki", "lens", "method", "evidence", "decision"] {
-        assert!(root.join("guru-maker").join(directory).is_dir());
+        assert!(root.join("gibo").join(directory).is_dir());
     }
-    assert!(root.join(".guru-maker/packs").is_dir());
+    assert!(root.join(".gibo/packs").is_dir());
     assert_eq!(
-        fs::read_to_string(root.join(".guru-maker/.gitignore")).unwrap(),
+        fs::read_to_string(root.join(".gibo/.gitignore")).unwrap(),
         "packs/\n"
     );
     assert_eq!(
-        fs::read_to_string(root.join(".guru-maker/mode")).unwrap(),
+        fs::read_to_string(root.join(".gibo/mode")).unwrap(),
         "auto\n"
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("\"pack_directory\""));
-    assert!(String::from_utf8_lossy(&output.stdout).contains("\"guru_mode\": \"auto\""));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("\"record_mode\": \"auto\""));
     fs::remove_dir_all(root).unwrap();
 }
 
 #[test]
-fn guru_mode_defaults_to_auto_and_persists_explicit_off() {
+fn record_mode_defaults_to_auto_and_persists_explicit_off() {
     let root = temp_dir("mode");
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
 
@@ -160,13 +159,13 @@ fn guru_mode_defaults_to_auto_and_persists_explicit_off() {
     ]);
     assert!(off.status.success());
     assert_eq!(
-        fs::read_to_string(root.join(".guru-maker/mode")).unwrap(),
+        fs::read_to_string(root.join(".gibo/mode")).unwrap(),
         "off\n"
     );
 
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
     assert_eq!(
-        fs::read_to_string(root.join(".guru-maker/mode")).unwrap(),
+        fs::read_to_string(root.join(".gibo/mode")).unwrap(),
         "off\n"
     );
 
@@ -174,12 +173,12 @@ fn guru_mode_defaults_to_auto_and_persists_explicit_off() {
     assert!(!invalid.status.success());
     assert!(String::from_utf8_lossy(&invalid.stderr).contains("expected auto or off"));
 
-    fs::write(root.join(".guru-maker/mode"), "manual\n").unwrap();
+    fs::write(root.join(".gibo/mode"), "manual\n").unwrap();
     let malformed = command(&["mode", "--workspace", root.to_str().unwrap()]);
     assert!(!malformed.status.success());
     assert!(String::from_utf8_lossy(&malformed.stderr).contains("expected auto or off"));
 
-    fs::remove_file(root.join(".guru-maker/mode")).unwrap();
+    fs::remove_file(root.join(".gibo/mode")).unwrap();
     let legacy = command(&["mode", "--workspace", root.to_str().unwrap(), "--json"]);
     assert!(legacy.status.success());
     let legacy: serde_json::Value = serde_json::from_slice(&legacy.stdout).unwrap();
@@ -193,16 +192,13 @@ fn guru_mode_defaults_to_auto_and_persists_explicit_off() {
 fn pack_help_exposes_only_the_new_namespace() {
     assert!(!command(&["plugin", "--help"]).status.success());
     for (subcommand, expected) in [
-        ("install", "gurumaker pack install <github-url>"),
-        ("list", "gurumaker pack list"),
-        ("inspect", "gurumaker pack inspect <wiki|lens|method>"),
-        ("update", "gurumaker pack update <wiki|lens|method>"),
-        ("remove", "gurumaker pack remove <wiki|lens|method>"),
-        (
-            "create",
-            "gurumaker pack create <wiki|lens|method> <output-dir>",
-        ),
-        ("check", "gurumaker pack check <path>"),
+        ("install", "gibo pack install <github-url>"),
+        ("list", "gibo pack list"),
+        ("inspect", "gibo pack inspect <wiki|lens|method>"),
+        ("update", "gibo pack update <wiki|lens|method>"),
+        ("remove", "gibo pack remove <wiki|lens|method>"),
+        ("create", "gibo pack create <wiki|lens|method> <output-dir>"),
+        ("check", "gibo pack check <path>"),
     ] {
         let output = command(&["pack", subcommand, "--help"]);
         assert!(
@@ -218,7 +214,7 @@ fn pack_help_exposes_only_the_new_namespace() {
 fn hooks_protect_pack_sources_and_validate_local_elements() {
     let root = temp_dir("hooks");
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
-    let pack_file = root.join(".guru-maker/packs/wiki/element.md");
+    let pack_file = root.join(".gibo/packs/wiki/element.md");
     fs::create_dir_all(pack_file.parent().unwrap()).unwrap();
     fs::write(&pack_file, "# Installed source\n").unwrap();
     let protected = hook(
@@ -233,7 +229,7 @@ fn hooks_protect_pack_sources_and_validate_local_elements() {
     assert_eq!(protected.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&protected.stderr).contains("blocked a direct edit"));
 
-    let local = root.join("guru-maker/wiki/element.md");
+    let local = root.join("gibo/wiki/element.md");
     fs::write(&local, "# Missing frontmatter\n").unwrap();
     let invalid = hook(
         &root,
@@ -270,8 +266,8 @@ fn create_and_check_build_a_single_kind_hierarchical_markdown_pack() {
     assert!(command(&["init", workspace.to_str().unwrap()])
         .status
         .success());
-    let first = workspace.join("guru-maker/lens/first.md");
-    let second = workspace.join("guru-maker/lens/quality/second.md");
+    let first = workspace.join("gibo/lens/first.md");
+    let second = workspace.join("gibo/lens/quality/second.md");
     fs::create_dir_all(second.parent().unwrap()).unwrap();
     fs::write(&first, element("lens", "lens:first", "First", "One.")).unwrap();
     fs::write(&second, element("lens", "lens:second", "Second", "Two.")).unwrap();
@@ -293,7 +289,7 @@ fn create_and_check_build_a_single_kind_hierarchical_markdown_pack() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_eq!(
-        fs::read_to_string(pack.join("guru-pack.json")).unwrap(),
+        fs::read_to_string(pack.join("gibo-pack.json")).unwrap(),
         "{\n  \"schema_version\": 1,\n  \"kind\": \"lens\",\n  \"elements\": [\n    \"first.md\",\n    \"quality/second.md\"\n  ]\n}\n"
     );
     assert!(pack.join("first.md").is_file());
@@ -329,7 +325,7 @@ fn check_accepts_hierarchy_and_rejects_undeclared_static_and_linked_elements() {
     )
     .unwrap();
     fs::write(
-        pack.join("guru-pack.json"),
+        pack.join("gibo-pack.json"),
         "{\n\"schema_version\":1,\n\"kind\":\"wiki\",\n\"elements\":[\"industry/element.md\"]\n}\n",
     )
     .unwrap();
@@ -387,7 +383,7 @@ fn check_rejects_duplicate_ids_invalid_frontmatter_and_executable_elements() {
     )
     .unwrap();
     fs::write(
-        pack.join("guru-pack.json"),
+        pack.join("gibo-pack.json"),
         "{\"schema_version\":1,\"kind\":\"method\",\"elements\":[\"first.md\",\"second.md\"]}\n",
     )
     .unwrap();
@@ -460,15 +456,11 @@ fn three_kinds_install_once_and_seed_only_local_memory() {
             String::from_utf8_lossy(&output.stderr)
         );
         assert!(workspace
-            .join(".guru-maker/packs")
+            .join(".gibo/packs")
             .join(kind)
-            .join("guru-pack.json")
+            .join("gibo-pack.json")
             .is_file());
-        assert!(workspace
-            .join("guru-maker")
-            .join(kind)
-            .join(filename)
-            .is_file());
+        assert!(workspace.join("gibo").join(kind).join(filename).is_file());
     }
     let list = command(&[
         "pack",
@@ -506,7 +498,7 @@ fn install_rejects_an_existing_slot_or_local_memory_without_partial_state() {
         .status
         .success());
     fs::write(
-        workspace.join("guru-maker/wiki/local.md"),
+        workspace.join("gibo/wiki/local.md"),
         element("wiki", "wiki:local", "Local", "Body."),
     )
     .unwrap();
@@ -524,15 +516,13 @@ fn install_rejects_an_existing_slot_or_local_memory_without_partial_state() {
         url,
     );
     assert!(!output.status.success());
-    assert!(!workspace.join(".guru-maker/packs/wiki").exists());
+    assert!(!workspace.join(".gibo/packs/wiki").exists());
     assert_eq!(
-        fs::read_dir(workspace.join(".guru-maker/packs"))
-            .unwrap()
-            .count(),
+        fs::read_dir(workspace.join(".gibo/packs")).unwrap().count(),
         0
     );
 
-    fs::remove_file(workspace.join("guru-maker/wiki/local.md")).unwrap();
+    fs::remove_file(workspace.join("gibo/wiki/local.md")).unwrap();
     assert!(mapped_command(
         &[
             "pack",
@@ -584,7 +574,7 @@ fn update_changes_only_the_hidden_source_and_remove_preserves_local_memory() {
     )
     .status
     .success());
-    let local = workspace.join("guru-maker/method/element.md");
+    let local = workspace.join("gibo/method/element.md");
     fs::write(
         &local,
         element(
@@ -630,7 +620,7 @@ fn update_changes_only_the_hidden_source_and_remove_preserves_local_memory() {
         .unwrap()
         .contains("Local evolution."));
     assert!(
-        fs::read_to_string(workspace.join(".guru-maker/packs/method/element.md"))
+        fs::read_to_string(workspace.join(".gibo/packs/method/element.md"))
             .unwrap()
             .contains("Upstream evolution.")
     );
@@ -643,7 +633,7 @@ fn update_changes_only_the_hidden_source_and_remove_preserves_local_memory() {
         workspace.to_str().unwrap(),
     ]);
     assert!(remove.status.success());
-    assert!(!workspace.join(".guru-maker/packs/method").exists());
+    assert!(!workspace.join(".gibo/packs/method").exists());
     assert!(local.exists());
     assert!(!mapped_command(
         &[
@@ -683,15 +673,15 @@ fn invalid_pack_update_restores_the_prior_source_and_local_memory() {
     )
     .status
     .success());
-    let installed = workspace.join(".guru-maker/packs/lens");
+    let installed = workspace.join(".gibo/packs/lens");
     let before = git_stdout(&installed, &["rev-parse", "HEAD"]);
-    let local_before = fs::read_to_string(workspace.join("guru-maker/lens/element.md")).unwrap();
+    let local_before = fs::read_to_string(workspace.join("gibo/lens/element.md")).unwrap();
     fs::write(
-        source.join("guru-pack.json"),
+        source.join("gibo-pack.json"),
         "{\"schema_version\":1,\"kind\":\"lens\",\"elements\":[\"missing.md\"]}\n",
     )
     .unwrap();
-    git(&source, &["add", "guru-pack.json"]);
+    git(&source, &["add", "gibo-pack.json"]);
     git(&source, &["commit", "-m", "invalid"]);
     let invalid = git_stdout(&source, &["rev-parse", "HEAD"]);
     let output = mapped_command(
@@ -710,7 +700,7 @@ fn invalid_pack_update_restores_the_prior_source_and_local_memory() {
     assert!(!output.status.success());
     assert_eq!(git_stdout(&installed, &["rev-parse", "HEAD"]), before);
     assert_eq!(
-        fs::read_to_string(workspace.join("guru-maker/lens/element.md")).unwrap(),
+        fs::read_to_string(workspace.join("gibo/lens/element.md")).unwrap(),
         local_before
     );
     fs::remove_dir_all(root).unwrap();
@@ -721,22 +711,22 @@ fn knowledge_check_enforces_relationship_kinds_and_preserves_hierarchy() {
     let root = temp_dir("relationships");
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
     fs::write(
-        root.join("guru-maker/wiki/w.md"),
+        root.join("gibo/wiki/w.md"),
         element("wiki", "wiki:w", "Wiki", "Independent."),
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/method/m.md"),
+        root.join("gibo/method/m.md"),
         element("method", "method:m", "Method", "Independent."),
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/evidence/e.md"),
+        root.join("gibo/evidence/e.md"),
         element("evidence", "evidence:e", "Evidence", "Observed."),
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/decision/d.md"),
+        root.join("gibo/decision/d.md"),
         "---\nid: decision:d\ntitle: Decision\nsummary: Decision.\nas_of: 2026-07-28T12:00:00+09:00\nuses:\n  - wiki:w\n  - method:m\nsupports:\n  - evidence:e\n---\n",
     )
     .unwrap();
@@ -747,7 +737,7 @@ fn knowledge_check_enforces_relationship_kinds_and_preserves_hierarchy() {
     );
 
     fs::write(
-        root.join("guru-maker/wiki/w.md"),
+        root.join("gibo/wiki/w.md"),
         "---\nid: wiki:w\ntitle: Wiki\nsummary: Wiki.\nas_of: 2026-07-28T12:00:00+09:00\nuses:\n  - method:m\n---\n",
     )
     .unwrap();
@@ -756,19 +746,19 @@ fn knowledge_check_enforces_relationship_kinds_and_preserves_hierarchy() {
     assert!(String::from_utf8_lossy(&invalid.stderr).contains("relationship is not permitted"));
 
     fs::write(
-        root.join("guru-maker/wiki/w.md"),
+        root.join("gibo/wiki/w.md"),
         element("wiki", "wiki:w", "Wiki", "Independent."),
     )
     .unwrap();
-    fs::create_dir(root.join("guru-maker/wiki/nested")).unwrap();
+    fs::create_dir(root.join("gibo/wiki/nested")).unwrap();
     fs::write(
-        root.join("guru-maker/wiki/nested/child.md"),
+        root.join("gibo/wiki/nested/child.md"),
         element("wiki", "wiki:child", "Child", "Nested knowledge."),
     )
     .unwrap();
     let nested = command(&["knowledge", "check", "--workspace", root.to_str().unwrap()]);
     assert!(nested.status.success());
-    fs::write(root.join("guru-maker/wiki/nested/data.txt"), "not Markdown").unwrap();
+    fs::write(root.join("gibo/wiki/nested/data.txt"), "not Markdown").unwrap();
     let invalid_file = command(&["knowledge", "check", "--workspace", root.to_str().unwrap()]);
     assert!(!invalid_file.status.success());
     assert!(String::from_utf8_lossy(&invalid_file.stderr)
@@ -781,17 +771,17 @@ fn decision_graph_contains_only_local_valid_relationships() {
     let root = temp_dir("graph");
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
     fs::write(
-        root.join("guru-maker/wiki/w.md"),
+        root.join("gibo/wiki/w.md"),
         element("wiki", "wiki:w", "Wiki", "Independent."),
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/evidence/e.md"),
+        root.join("gibo/evidence/e.md"),
         element("evidence", "evidence:e", "Evidence", "Observed."),
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/decision/d.md"),
+        root.join("gibo/decision/d.md"),
         "---\nid: decision:d\ntitle: Decision\nsummary: Decision.\nas_of: 2026-07-28T12:00:00+09:00\nuses:\n  - wiki:w\nsupports:\n  - evidence:e\n---\n",
     )
     .unwrap();
@@ -804,7 +794,7 @@ fn decision_graph_contains_only_local_valid_relationships() {
     let stats: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(stats["edges"], 3);
     assert!(stats.get("plugins").is_none());
-    let page = fs::read_to_string(root.join("guru-maker/decision-graph.html")).unwrap();
+    let page = fs::read_to_string(root.join("gibo/decision-graph.html")).unwrap();
     assert!(page.contains("\"relationship\":\"uses\""));
     assert!(page.contains("\"relationship\":\"supports\""));
     assert!(!page.contains("plugin:"));
@@ -816,7 +806,7 @@ fn retrieval_remains_bounded_and_reports_authored_relationships() {
     let root = temp_dir("retrieval");
     assert!(command(&["init", root.to_str().unwrap()]).status.success());
     fs::write(
-        root.join("guru-maker/decision/original.md"),
+        root.join("gibo/decision/original.md"),
         element(
             "decision",
             "decision:original",
@@ -826,7 +816,7 @@ fn retrieval_remains_bounded_and_reports_authored_relationships() {
     )
     .unwrap();
     fs::write(
-        root.join("guru-maker/decision/revision.md"),
+        root.join("gibo/decision/revision.md"),
         "---\nid: decision:revision\ntitle: Revision\nsummary: Later margin review.\nas_of: 2026-07-28T12:00:00+09:00\nupdates:\n  - decision:original\ncontradicts:\n  - decision:original\n---\n\n# Revision\nChanged.",
     )
     .unwrap();

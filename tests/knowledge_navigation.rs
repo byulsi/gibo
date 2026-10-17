@@ -7,7 +7,7 @@ use std::{
 };
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_gurumaker")
+    env!("CARGO_BIN_EXE_gibo")
 }
 
 fn temp_dir(label: &str) -> PathBuf {
@@ -16,7 +16,7 @@ fn temp_dir(label: &str) -> PathBuf {
         .unwrap()
         .as_nanos();
     let path = std::env::temp_dir().join(format!(
-        "guru-maker-navigation-{label}-{}-{nonce}",
+        "gibo-navigation-{label}-{}-{nonce}",
         std::process::id()
     ));
     fs::create_dir_all(&path).unwrap();
@@ -37,7 +37,7 @@ fn record(
     extra: &str,
     body: &str,
 ) {
-    let path = root.join("guru-maker").join(relative);
+    let path = root.join("gibo").join(relative);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(
         path,

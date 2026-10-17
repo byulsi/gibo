@@ -1,6 +1,6 @@
 ---
 name: research
-description: Apply Gibo's project-memory retrieval and retention contract to material natural-language investment or financial research in an initialized Gibo project, even when the user does not mention Gibo or saving and another research capability supplies the domain procedure. Host agents and specialized capabilities own research strategy, tool selection, and synthesis. Use explicitly outside an initialized project only when the user names Gibo Research. Do not use for memory-only recall, supplied-source capture without refresh or analysis, a requested point-in-time Decision or outcome, deliberate lesson extraction, or Guru Pack lifecycle work.
+description: Apply Gibo's project-memory retrieval and retention contract to material natural-language investment or financial research in an initialized Gibo project, even when the user does not mention Gibo or saving and another research capability supplies the domain procedure. Host agents and specialized capabilities own research strategy, tool selection, and synthesis. Use explicitly outside an initialized project only when the user names Gibo Research. Do not use for memory-only recall, supplied-source capture without refresh or analysis, a requested point-in-time Decision or outcome, deliberate lesson extraction, or Gibo Pack lifecycle work.
 ---
 
 # Gibo Research
@@ -18,26 +18,26 @@ supplied artifacts, and targeted project memory. Ask for clarification only
 when the unresolved ambiguity would materially change the research question,
 requested output, or authorization.
 When no referent and no supplied artifact exists, ask immediately without
-scanning project files, searching memory, or reading Guru Mode.
+scanning project files, searching memory, or reading Record Mode.
 
 Resolve every linked reference path relative to this loaded `SKILL.md`. The
 loaded Skill directory is authoritative: when it is under
 `<project>/.agents/skills/`, `../../shared/...` reaches
 `<project>/.agents/shared/...`. Never substitute a user-global `.codex` path,
 another plugin-cache path, or `skills/shared/...`. Read
-[project retrieval](../../shared/gurumaker/references/retrieval.md) before
+[project retrieval](../../shared/gibo/references/retrieval.md) before
 using memory, [research
-framing](../../shared/gurumaker/references/research-framing.md) for material
+framing](../../shared/gibo/references/research-framing.md) for material
 research, [research capability
-composition](../../shared/gurumaker/references/research-capabilities.md) when
-specialized research support may fit the request, [Guru
-Mode](../../shared/gurumaker/references/guru-mode.md) before a possible memory
+composition](../../shared/gibo/references/research-capabilities.md) when
+specialized research support may fit the request, [Record
+Mode](../../shared/gibo/references/record-mode.md) before a possible memory
 write, [the workspace
-contract](../../shared/gurumaker/references/workspace-contract.md) when project
+contract](../../shared/gibo/references/workspace-contract.md) when project
 layout matters, and [the Runtime
-contract](../../shared/gurumaker/references/runtime.md) before any `gurumaker`
+contract](../../shared/gibo/references/runtime.md) before any `gibo`
 command. Read [the in-task curation
-contract](../../shared/gurumaker/references/curation.md) before retaining any
+contract](../../shared/gibo/references/curation.md) before retaining any
 result.
 
 The host selects any research Skills, tools, and data connectors and decides
@@ -46,14 +46,14 @@ router. The host and specialized capabilities own research strategy, tool
 selection, domain procedures, evidence evaluation, and synthesis. This Skill
 contributes only relevant project-memory retrieval, stale-memory discipline,
 and retention boundaries. Apply its compact target-memory query alongside the
-host's chosen research path in an initialized project; Guru Mode `off` or a
+host's chosen research path in an initialized project; Record Mode `off` or a
 no-write instruction does not disable that read-only query.
 
 Match the research and validation method to the question rather than assuming
 a company, fundamental, causal, technical, or quantitative workflow. Treat
 stale memory as context, not a current fact. Search only the project-owned
-hierarchy under `guru-maker/`; installed Pack source slots are never research
-context. Never filesystem-read a `guru-maker/` record, even just its metadata
+hierarchy under `gibo/`; installed Pack source slots are never research
+context. Never filesystem-read a `gibo/` record, even just its metadata
 before lookup; use Runtime search and exact read for all project memory.
 
 For every material research task in an initialized project, run one compact
@@ -68,7 +68,7 @@ exact-read its selected result; do not fan out by kind or reformulate a
 no-match. This retrieval is useful context; the pre-write candidate search
 remains separately required for deduplication when Auto retains a result.
 
-In an initialized workspace, resolve Guru Mode before a possible write. In
+In an initialized workspace, resolve Record Mode before a possible write. In
 `auto`, apply the shared durability gate after completing the research; do not
 wait for a separate save request. A new source- or calculation-bound
 observation with a period or cutoff that changes or materially qualifies a
@@ -79,7 +79,7 @@ Otherwise retain only the minimum stable Wiki, well-bounded Lens, or repeatable
 Method improvement likely to matter again. Do not promote a one-off result or
 unreviewed inference into reusable memory. In `off`, write only after an
 explicit retention request. Read [the record
-contract](../../shared/gurumaker/references/record-contract.md) before writing.
+contract](../../shared/gibo/references/record-contract.md) before writing.
 Use compact pre-write candidates and apply the kind-specific curation policy;
 new current observations remain append-oriented Evidence, while only stable
 reviewed knowledge improves reusable memory. Do not create or broaden a Lens

@@ -1,6 +1,6 @@
 # CI/CD
 
-This document is the maintainer map for Guru Maker's GitHub Actions. Runtime
+This document is the maintainer map for Gibo's GitHub Actions. Runtime
 compatibility and installation semantics remain owned by
 [Runtime distribution and updates](runtime-distribution.md).
 
@@ -61,7 +61,7 @@ Keep these exact values equal during `0.x`:
 Cargo.toml
 .codex-plugin/plugin.json
 .claude-plugin/plugin.json
-shared/gurumaker/runtime/version
+shared/gibo/runtime/version
 ```
 
 Also move the relevant `CHANGELOG.md` entry out of `Unreleased` when preparing
@@ -74,7 +74,7 @@ cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --locked
 cargo build --release --locked
-sh -n shared/gurumaker/scripts/gurumaker.sh
+sh -n shared/gibo/scripts/gibo.sh
 ```
 
 Then commit, push, and push the exact matching tag. After publication, verify
@@ -92,8 +92,8 @@ mismatch requires deliberate manual repair rather than automatic replacement.
 | --- | --- |
 | Format, lint, unit, or integration test | `src/` and `tests/` |
 | Plugin identity or version mismatch | host manifests and `tests/product_contract.rs` |
-| Linux fixture or checksum failure | `shared/gurumaker/scripts/gurumaker.sh` |
-| Windows wrapper failure | `shared/gurumaker/scripts/gurumaker.ps1` |
+| Linux fixture or checksum failure | `shared/gibo/scripts/gibo.sh` |
+| Windows wrapper failure | `shared/gibo/scripts/gibo.ps1` |
 | Target build failure | release matrix target/toolchain setup |
 | Missing or renamed release asset | release packaging and `docs/runtime-distribution.md` |
 | Missing or incomplete release notes | matching `CHANGELOG.md` section and publish job |

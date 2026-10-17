@@ -68,7 +68,7 @@ fn release_publication_uses_the_versioned_changelog_entry() {
 fn public_identity_and_runtime_version_are_synchronized() {
     let claude = json(".claude-plugin/plugin.json");
     let marketplace = json(".claude-plugin/marketplace.json");
-    let runtime_version = fs::read_to_string(root().join("shared/gurumaker/runtime/version"))
+    let runtime_version = fs::read_to_string(root().join("shared/gibo/runtime/version"))
         .unwrap()
         .trim()
         .to_owned();
@@ -76,9 +76,8 @@ fn public_identity_and_runtime_version_are_synchronized() {
 
     assert_eq!(claude["name"], "gibo");
     assert_eq!(claude["repository"], "https://github.com/byulsi/gibo");
-    assert!(claude["version"]
-        .as_str()
-        .is_some_and(|version| version.split('.').count() == 3));
+    assert_eq!(claude["version"], cargo_version);
+    assert_eq!(claude["version"], runtime_version);
     assert_eq!(marketplace["name"], "byulsi");
     assert_eq!(marketplace["plugins"][0]["name"], "gibo");
     assert_eq!(marketplace["plugins"][0]["source"], "./");
@@ -86,31 +85,31 @@ fn public_identity_and_runtime_version_are_synchronized() {
     assert!(!root().join(".agents").exists());
 
     let cargo = fs::read_to_string(root().join("Cargo.toml")).unwrap();
-    assert!(cargo.contains("name = \"guru-maker\""));
+    assert!(cargo.contains("name = \"gibo\""));
     assert_eq!(runtime_version, cargo_version);
-    assert!(cargo.contains("name = \"gurumaker\""));
+    assert!(cargo.contains("name = \"gibo\""));
 }
 
 #[test]
 fn public_skills_share_cross_host_runtime_delivery() {
-    let posix = root().join("shared/gurumaker/scripts/gurumaker.sh");
-    let windows = root().join("shared/gurumaker/scripts/gurumaker.ps1");
-    let runtime_reference = root().join("shared/gurumaker/references/runtime.md");
+    let posix = root().join("shared/gibo/scripts/gibo.sh");
+    let windows = root().join("shared/gibo/scripts/gibo.ps1");
+    let runtime_reference = root().join("shared/gibo/references/runtime.md");
     assert!(posix.is_file());
     assert!(windows.is_file());
     assert!(runtime_reference.is_file());
-    assert!(!root().join("shared/gurumaker/SKILL.md").exists());
+    assert!(!root().join("shared/gibo/SKILL.md").exists());
 
     let runtime = fs::read_to_string(runtime_reference).unwrap();
     assert!(runtime.contains("five public Skills"));
-    assert!(runtime.contains("../../shared/gurumaker/scripts/gurumaker.sh"));
-    assert!(runtime.contains("..\\..\\shared\\gurumaker\\scripts\\gurumaker.ps1"));
+    assert!(runtime.contains("../../shared/gibo/scripts/gibo.sh"));
+    assert!(runtime.contains("..\\..\\shared\\gibo\\scripts\\gibo.ps1"));
 
     for wrapper in [&posix, &windows] {
         let content = fs::read_to_string(wrapper).unwrap();
-        assert!(content.contains("GURUMAKER_RUNTIME_BIN"));
-        assert!(content.contains("GURUMAKER_RUNTIME_HOME"));
-        assert!(content.contains("GURUMAKER_RELEASE_BASE_URL"));
+        assert!(content.contains("GIBO_RUNTIME_BIN"));
+        assert!(content.contains("GIBO_RUNTIME_HOME"));
+        assert!(content.contains("GIBO_RELEASE_BASE_URL"));
         assert!(content.contains("SHA256SUMS"));
     }
 
@@ -144,7 +143,7 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
         let skill = fs::read_to_string(path.join("SKILL.md")).unwrap();
         assert!(!path.join("agents").exists());
         assert!(skill.starts_with(&format!("---\nname: {name}\n")));
-        assert!(skill.contains("../../shared/gurumaker/references/runtime.md"));
+        assert!(skill.contains("../../shared/gibo/references/runtime.md"));
         assert!(skill.contains("relative to this loaded `SKILL.md`"));
         assert!(!skill.contains("[TODO:"));
     }
@@ -162,15 +161,15 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(research.contains("every material research task in an initialized project"));
     assert!(research.contains("Host agents and specialized capabilities own research strategy"));
     assert!(research.contains("do not act as an agent or tool\nrouter"));
-    assert!(research.contains("Never filesystem-read a `guru-maker/` record"));
-    assert!(research.contains("Guru Mode `off` or a\nno-write instruction does not disable"));
+    assert!(research.contains("Never filesystem-read a `gibo/` record"));
+    assert!(research.contains("Record Mode `off` or a\nno-write instruction does not disable"));
     assert!(research.contains("bounded activation pass"));
     assert!(research.contains("authored reusable inputs"));
     assert!(research.contains("single most consequential\nreusable role"));
     assert!(research.contains("one allowed concept-gap query"));
-    assert!(research.contains("../../shared/gurumaker/references/guru-mode.md"));
-    assert!(research.contains("../../shared/gurumaker/references/research-capabilities.md"));
-    let research_capabilities = normalized("shared/gurumaker/references/research-capabilities.md");
+    assert!(research.contains("../../shared/gibo/references/record-mode.md"));
+    assert!(research.contains("../../shared/gibo/references/research-capabilities.md"));
+    let research_capabilities = normalized("shared/gibo/references/research-capabilities.md");
     for required in [
         "not a research router",
         "project-memory retrieval",
@@ -197,7 +196,7 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(memory.contains("rendering the Decision Graph"));
     assert!(memory.contains("Never run `rg`, `grep`, `find`, `ls`, `cat`, `sed`"));
     assert!(memory.contains("a no-match is not evidence"));
-    assert!(memory.contains("../../shared/gurumaker/references/guru-mode.md"));
+    assert!(memory.contains("../../shared/gibo/references/record-mode.md"));
 
     let decision = fs::read_to_string(skills_root.join("decision/SKILL.md")).unwrap();
     assert!(decision.contains("Execution Brief"));
@@ -221,18 +220,18 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(decision.contains("only plausibly material `supports` Evidence for evaluation"));
     assert!(decision.contains("carry forward\nonly observations actually reused"));
     assert!(decision.contains("one allowed concept-gap query"));
-    assert!(decision.contains("../../shared/gurumaker/references/guru-mode.md"));
+    assert!(decision.contains("../../shared/gibo/references/record-mode.md"));
     assert!(
         decision.contains("route any write through the fitting Memory, Research, or Train Skill")
     );
     assert!(decision.contains("not write it through Decision"));
 
-    let execution_brief = normalized("shared/gurumaker/references/execution-brief.md");
-    assert!(execution_brief.contains("outside `guru-maker/`"));
-    assert!(execution_brief.contains("Guru Mode governs Guru memory"));
+    let execution_brief = normalized("shared/gibo/references/execution-brief.md");
+    assert!(execution_brief.contains("outside `gibo/`"));
+    assert!(execution_brief.contains("Record Mode governs Gibo memory"));
     assert!(execution_brief.contains("does not create a Decision"));
 
-    let training_contract = normalized("shared/gurumaker/references/training.md");
+    let training_contract = normalized("shared/gibo/references/training.md");
     for boundary in [
         "model fine-tuning",
         "background learning",
@@ -254,10 +253,10 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     assert!(packs.contains("at most one installed"));
     assert!(packs.contains("The CLI namespace is `pack`"));
     assert!(packs.contains("never changes local memory"));
-    assert!(packs.contains("Guru Mode never makes a Pack"));
+    assert!(packs.contains("Record Mode never makes a Pack"));
 
     let train = fs::read_to_string(skills_root.join("train/SKILL.md")).unwrap();
-    assert!(train.contains("../../shared/gurumaker/references/guru-mode.md"));
+    assert!(train.contains("../../shared/gibo/references/record-mode.md"));
     assert!(train.contains("never invoke this Skill implicitly"));
     assert!(train.contains("read that smallest supplied artifact"));
     assert!(packs.contains("never invoke Pack work implicitly"));
@@ -265,7 +264,7 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
     for skill in ["memory", "research", "decision", "train"] {
         let content = fs::read_to_string(skills_root.join(skill).join("SKILL.md")).unwrap();
         assert!(
-            content.contains("../../shared/gurumaker/references/curation.md"),
+            content.contains("../../shared/gibo/references/curation.md"),
             "{skill} must load the shared curation contract before writing"
         );
     }
@@ -280,7 +279,7 @@ fn public_skill_surface_is_exactly_the_five_routed_entrypoints() {
 
 #[test]
 fn retrieval_reviser_and_learning_boundaries_are_explicit() {
-    let retrieval = normalized("shared/gurumaker/references/retrieval.md");
+    let retrieval = normalized("shared/gibo/references/retrieval.md");
     for required in [
         "Direct recall",
         "adjacent transfer",
@@ -333,7 +332,7 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         );
     }
 
-    let research = normalized("shared/gurumaker/references/research-framing.md");
+    let research = normalized("shared/gibo/references/research-framing.md");
     for required in [
         "claim scope, period, and currentness",
         "supplied by the user is external evidence for task routing",
@@ -349,7 +348,7 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         );
     }
 
-    let capabilities = normalized("shared/gurumaker/references/research-capabilities.md");
+    let capabilities = normalized("shared/gibo/references/research-capabilities.md");
     for required in [
         "smallest useful set",
         "user-specified capability",
@@ -367,7 +366,7 @@ fn retrieval_reviser_and_learning_boundaries_are_explicit() {
         );
     }
 
-    let training = normalized("shared/gurumaker/references/training.md");
+    let training = normalized("shared/gibo/references/training.md");
     for required in [
         "search for the reusable concept",
         "outcome luck",
@@ -392,7 +391,7 @@ fn public_examples_are_us_led_without_narrowing_market_scope() {
         "docs/architecture.md",
         "docs/knowledge-model.md",
         "docs/decision-memory.md",
-        "shared/gurumaker/references/record-contract.md",
+        "shared/gibo/references/record-contract.md",
     ]
     .map(normalized)
     .join(" ");
@@ -414,7 +413,7 @@ fn public_examples_are_us_led_without_narrowing_market_scope() {
 
 #[test]
 fn record_and_pack_context_boundaries_are_explicit() {
-    let records = normalized("shared/gurumaker/references/record-contract.md");
+    let records = normalized("shared/gibo/references/record-contract.md");
     for required in [
         "information horizon",
         "reproducible derived result",
@@ -436,7 +435,7 @@ fn record_and_pack_context_boundaries_are_explicit() {
         );
     }
 
-    let packs = normalized("shared/gurumaker/references/workspace-contract.md");
+    let packs = normalized("shared/gibo/references/workspace-contract.md");
     for required in [
         "One hidden source slot",
         "copies the declared elements once",
@@ -449,7 +448,7 @@ fn record_and_pack_context_boundaries_are_explicit() {
 
 #[test]
 fn wiki_authoring_is_llm_friendly_and_linked_without_becoming_a_graph() {
-    let records = normalized("shared/gurumaker/references/record-contract.md");
+    let records = normalized("shared/gibo/references/record-contract.md");
     for required in [
         "science, technology, industry",
         "one coherent concept or question",
@@ -608,8 +607,8 @@ fn retrieval_scaling_is_bounded_measured_and_keeps_markdown_canonical() {
 }
 
 #[test]
-fn guru_mode_is_default_auto_and_explicitly_bounded() {
-    let mode = normalized("shared/gurumaker/references/guru-mode.md");
+fn record_mode_is_default_auto_and_explicitly_bounded() {
+    let mode = normalized("shared/gibo/references/record-mode.md");
     for required in [
         "`auto` is the default",
         "minimum sufficient memory change",
@@ -622,7 +621,7 @@ fn guru_mode_is_default_auto_and_explicitly_bounded() {
         "explicitly asks",
         "not a background process",
         "not a filesystem permission or security boundary",
-        "Guru Packs",
+        "Gibo Packs",
         "Git",
         "external execution",
         "never names Gibo",
@@ -631,38 +630,32 @@ fn guru_mode_is_default_auto_and_explicitly_bounded() {
     ] {
         assert!(
             mode.contains(required),
-            "Guru Mode contract misses {required}"
+            "Record Mode contract misses {required}"
         );
     }
 
     let combined = [
-        "docs/guru-maker-readme.md",
-        "docs/guru-maker-installation.md",
+        "README.md",
+        "installation.md",
         "docs/architecture.md",
         "docs/knowledge-model.md",
         "docs/decision-memory.md",
-        "shared/gurumaker/references/workspace-contract.md",
-        "shared/gurumaker/references/runtime.md",
+        "shared/gibo/references/workspace-contract.md",
+        "shared/gibo/references/runtime.md",
     ]
     .map(normalized)
     .join(" ");
-    for required in [
-        ".guru-maker/mode",
-        "gurumaker mode",
-        "`auto`",
-        "`off`",
-        "explicit",
-    ] {
+    for required in [".gibo/mode", "gibo mode", "`auto`", "`off`", "explicit"] {
         assert!(
             combined.contains(required),
-            "documented Guru Mode misses {required}"
+            "documented Record Mode misses {required}"
         );
     }
 }
 
 #[test]
 fn in_task_curation_is_kind_specific_bounded_and_host_owned() {
-    let curation = normalized("shared/gurumaker/references/curation.md");
+    let curation = normalized("shared/gibo/references/curation.md");
     for required in [
         "host-owned semantic work",
         "not a background process",
@@ -704,7 +697,7 @@ fn in_task_curation_is_kind_specific_bounded_and_host_owned() {
         );
     }
 
-    let mode = normalized("shared/gurumaker/references/guru-mode.md");
+    let mode = normalized("shared/gibo/references/record-mode.md");
     assert!(
         mode.contains("An explicit write authorizes the requested record, not adjacent cleanup")
     );
@@ -722,39 +715,39 @@ fn in_task_curation_is_kind_specific_bounded_and_host_owned() {
 #[test]
 fn singular_collections_and_kind_specific_packs_are_the_only_documented_model() {
     let combined = [
-        "docs/guru-maker-readme.md",
-        "docs/guru-maker-installation.md",
+        "README.md",
+        "installation.md",
         "docs/architecture.md",
         "docs/knowledge-model.md",
         "docs/decision-memory.md",
         "docs/community-plugins.md",
-        "shared/gurumaker/references/workspace-contract.md",
-        "shared/gurumaker/references/record-contract.md",
+        "shared/gibo/references/workspace-contract.md",
+        "shared/gibo/references/record-contract.md",
         ".github/workflows/ci.yml",
     ]
     .map(normalized)
     .join(" ");
     for required in [
-        "guru-maker/wiki/",
-        "guru-maker/lens/",
-        "guru-maker/method/",
-        "guru-maker/evidence/",
-        "guru-maker/decision/",
-        ".guru-maker/packs/",
-        "guru-pack.json",
-        "gurumaker pack",
+        "gibo/wiki/",
+        "gibo/lens/",
+        "gibo/method/",
+        "gibo/evidence/",
+        "gibo/decision/",
+        ".gibo/packs/",
+        "gibo-pack.json",
+        "gibo pack",
         "nested subject",
     ] {
         assert!(combined.contains(required), "contract misses {required}");
     }
     for retired in [
-        "guru-maker/wikis/",
-        "guru-maker/lenses/",
-        "guru-maker/methods/",
-        "guru-maker/decisions/",
-        ".guru-maker/plugins/",
+        "gibo/wikis/",
+        "gibo/lenses/",
+        "gibo/methods/",
+        "gibo/decisions/",
+        ".gibo/plugins/",
         "guru-plugin.json",
-        "gurumaker plugin",
+        "gibo plugin",
     ] {
         assert!(!combined.contains(retired), "contract retains {retired}");
     }
@@ -834,9 +827,9 @@ fn repository_contains_only_the_thin_product() {
         .join("\n");
     for required in [
         "investment memory",
-        "guru-maker/",
-        "Guru Mode",
-        "Guru Packs",
+        "gibo/",
+        "Record Mode",
+        "Gibo Packs",
         "Execution Brief",
     ] {
         assert!(skills.contains(required), "skills miss {required}");

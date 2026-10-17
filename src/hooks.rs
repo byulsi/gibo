@@ -69,9 +69,9 @@ fn pre_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
     {
         let relative = target.strip_prefix(root).unwrap_or(&target);
         return Ok(Outcome::Block(format!(
-            "Guru Maker blocked a direct edit to installed Guru Pack `{}`. \
+            "Gibo blocked a direct edit to installed Gibo Pack `{}`. \
              Installed sources are immutable provenance; edit the project-owned copy \
-             under `guru-maker/` instead.",
+             under `gibo/` instead.",
             relative.display()
         )));
     }
@@ -79,7 +79,7 @@ fn pre_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
 }
 
 fn post_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
-    let local_memory = resolved_path(&root.join("guru-maker"));
+    let local_memory = resolved_path(&root.join("gibo"));
     let edited_memory = targets.iter().map(|path| resolved_path(path)).any(|path| {
         path.starts_with(&local_memory)
             && path
@@ -97,7 +97,7 @@ fn post_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
     }
 
     let mut message = format!(
-        "Guru Maker memory validation failed after this edit ({} issue{}). \
+        "Gibo memory validation failed after this edit ({} issue{}). \
          Fix the local Markdown before continuing:",
         result.errors.len(),
         if result.errors.len() == 1 { "" } else { "s" }
@@ -110,7 +110,7 @@ fn post_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
     }
     if result.errors.len() > 10 {
         message.push_str(&format!(
-            "\n- … and {} more issue(s); run `gurumaker knowledge check` for the full list.",
+            "\n- … and {} more issue(s); run `gibo knowledge check` for the full list.",
             result.errors.len() - 10
         ));
     }
@@ -129,7 +129,7 @@ fn post_tool_use(root: &Path, targets: &[PathBuf]) -> Result<Outcome, String> {
 }
 
 fn workspace_root(cwd: &Path) -> Option<PathBuf> {
-    std::env::var_os("GURUMAKER_HOOK_WORKSPACE")
+    std::env::var_os("GIBO_HOOK_WORKSPACE")
         .map(PathBuf::from)
         .filter(|path| workspace::is_workspace(path))
         .or_else(|| workspace::find_workspace(cwd))
@@ -259,16 +259,16 @@ mod tests {
 
     #[test]
     fn extracts_all_apply_patch_targets() {
-        let patch = "*** Begin Patch\n*** Update File: guru-maker/wiki/a.md\n\
-                     *** Move to: guru-maker/wiki/b.md\n\
-                     *** Delete File: .guru-maker/packs/wiki/lens.md\n\
+        let patch = "*** Begin Patch\n*** Update File: gibo/wiki/a.md\n\
+                     *** Move to: gibo/wiki/b.md\n\
+                     *** Delete File: .gibo/packs/wiki/lens.md\n\
                      *** End Patch\n";
         assert_eq!(
             patch_paths(patch),
             [
-                "guru-maker/wiki/a.md",
-                "guru-maker/wiki/b.md",
-                ".guru-maker/packs/wiki/lens.md"
+                "gibo/wiki/a.md",
+                "gibo/wiki/b.md",
+                ".gibo/packs/wiki/lens.md"
             ]
         );
     }
@@ -276,10 +276,8 @@ mod tests {
     #[test]
     fn normalizes_parent_components_without_touching_prefixes() {
         assert_eq!(
-            lexical_normalize(Path::new(
-                "/work/project/guru-maker/../.guru-maker/packs/wiki"
-            )),
-            PathBuf::from("/work/project/.guru-maker/packs/wiki")
+            lexical_normalize(Path::new("/work/project/gibo/../.gibo/packs/wiki")),
+            PathBuf::from("/work/project/.gibo/packs/wiki")
         );
     }
 }

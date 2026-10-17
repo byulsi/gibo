@@ -15,8 +15,8 @@ esac
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-WRAPPER="$ROOT/shared/gurumaker/scripts/gurumaker.sh"
-VERSION=$(tr -d '[:space:]' <"$ROOT/shared/gurumaker/runtime/version")
+WRAPPER="$ROOT/shared/gibo/scripts/gibo.sh"
+VERSION=$(tr -d '[:space:]' <"$ROOT/shared/gibo/runtime/version")
 
 fail() {
     printf 'isolated test environment: %s\n' "$1" >&2
@@ -33,17 +33,17 @@ sha256_file() {
     fi
 }
 
-if [ -n "${GURUMAKER_TEST_RUNTIME_BIN:-}" ]; then
-    RUNTIME_BIN=$GURUMAKER_TEST_RUNTIME_BIN
+if [ -n "${GIBO_TEST_RUNTIME_BIN:-}" ]; then
+    RUNTIME_BIN=$GIBO_TEST_RUNTIME_BIN
 else
     cargo build --locked --manifest-path "$ROOT/Cargo.toml" >/dev/null
-    RUNTIME_BIN="$ROOT/target/debug/gurumaker"
+    RUNTIME_BIN="$ROOT/target/debug/gibo"
 fi
 [ -x "$RUNTIME_BIN" ] || fail "runtime is not executable: $RUNTIME_BIN"
 [ "$("$RUNTIME_BIN" --version)" = "$VERSION" ] ||
     fail "runtime does not report pinned version $VERSION"
 
-TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/guru-maker-test.XXXXXX")
+TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/gibo-test.XXXXXX")
 cleanup() {
     if [ "$keep" = true ]; then
         printf 'Kept isolated test environment at %s\n' "$TEST_ROOT"
@@ -67,22 +67,22 @@ TARGET=$(detect_target)
 RELEASE_DIR="$TEST_ROOT/releases/download/v$VERSION"
 RUNTIME_HOME="$TEST_ROOT/runtime-home"
 mkdir -p "$RELEASE_DIR"
-ARTIFACT="gurumaker-$TARGET"
+ARTIFACT="gibo-$TARGET"
 cp "$RUNTIME_BIN" "$RELEASE_DIR/$ARTIFACT"
 printf '%064d  %s\n' 0 "$ARTIFACT" >"$RELEASE_DIR/SHA256SUMS"
 
 run_wrapper() {
     (
-        unset GURUMAKER_RUNTIME_BIN GURUMAKER_RUNTIME_HOME GURUMAKER_RELEASE_BASE_URL
+        unset GIBO_RUNTIME_BIN GIBO_RUNTIME_HOME GIBO_RELEASE_BASE_URL
         PATH=/usr/local/bin:/usr/bin:/bin
         export PATH
-        GURUMAKER_RUNTIME_HOME="$RUNTIME_HOME" \
-        GURUMAKER_RELEASE_BASE_URL="file://$TEST_ROOT/releases/download" \
+        GIBO_RUNTIME_HOME="$RUNTIME_HOME" \
+        GIBO_RELEASE_BASE_URL="file://$TEST_ROOT/releases/download" \
             sh "$WRAPPER" "$@"
     )
 }
 
-INSTALLED_RUNTIME="$RUNTIME_HOME/$VERSION/$TARGET/gurumaker"
+INSTALLED_RUNTIME="$RUNTIME_HOME/$VERSION/$TARGET/gibo"
 if run_wrapper --runtime-install >/dev/null 2>&1; then
     fail 'wrapper accepted a bad Runtime checksum'
 fi
@@ -102,26 +102,26 @@ WORKSPACE_B="$TEST_ROOT/workspace-b"
 run_wrapper init "$WORKSPACE_A" >/dev/null
 run_wrapper init "$WORKSPACE_B" >/dev/null
 for workspace in "$WORKSPACE_A" "$WORKSPACE_B"; do
-    [ -d "$workspace/guru-maker" ] || fail "workspace was not initialized: $workspace"
-    [ -f "$workspace/.guru-maker/.gitignore" ] ||
+    [ -d "$workspace/gibo" ] || fail "workspace was not initialized: $workspace"
+    [ -f "$workspace/.gibo/.gitignore" ] ||
         fail "workspace marker is missing: $workspace"
-    [ "$(run_wrapper mode --workspace "$workspace")" = "Guru Mode: auto" ] ||
-        fail "workspace did not default to Guru Mode auto: $workspace"
+    [ "$(run_wrapper mode --workspace "$workspace")" = "Record Mode: auto" ] ||
+        fail "workspace did not default to Record Mode auto: $workspace"
 done
 run_wrapper mode off --workspace "$WORKSPACE_A" >/dev/null
-[ "$(run_wrapper mode --workspace "$WORKSPACE_A")" = "Guru Mode: off" ] ||
-    fail "workspace did not retain Guru Mode off: $WORKSPACE_A"
-[ "$(run_wrapper mode --workspace "$WORKSPACE_B")" = "Guru Mode: auto" ] ||
-    fail "Guru Mode leaked across workspaces"
+[ "$(run_wrapper mode --workspace "$WORKSPACE_A")" = "Record Mode: off" ] ||
+    fail "workspace did not retain Record Mode off: $WORKSPACE_A"
+[ "$(run_wrapper mode --workspace "$WORKSPACE_B")" = "Record Mode: auto" ] ||
+    fail "Record Mode leaked across workspaces"
 for workspace in "$WORKSPACE_A" "$WORKSPACE_B"; do
-    [ -d "$workspace/.guru-maker/packs" ] ||
+    [ -d "$workspace/.gibo/packs" ] ||
         fail "workspace pack directory is missing: $workspace"
-    [ -z "$(find "$workspace/.guru-maker/packs" -mindepth 1 -print -quit)" ] ||
+    [ -z "$(find "$workspace/.gibo/packs" -mindepth 1 -print -quit)" ] ||
         fail "workspace initialization created pack content: $workspace"
 done
 
-WIKI_A="$WORKSPACE_B/guru-maker/wiki/logical-qubits.md"
-WIKI_B="$WORKSPACE_B/guru-maker/wiki/surface-code.md"
+WIKI_A="$WORKSPACE_B/gibo/wiki/logical-qubits.md"
+WIKI_B="$WORKSPACE_B/gibo/wiki/surface-code.md"
 printf '%s\n' \
     '---' \
     'id: wiki:logical-qubits' \

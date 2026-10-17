@@ -7,7 +7,7 @@ datasets used as external evidence.
 
 The Runtime is the only project-memory read interface, even when a record path
 or exact ID is already visible. Do not use filesystem listing or reading
-commands as a shortcut to discover or load `guru-maker/` records.
+commands as a shortcut to discover or load `gibo/` records.
 
 Start memory-using work with the Runtime query, not a recursive inventory of
 the workspace. When user-supplied evidence must be located, scope filesystem
@@ -21,13 +21,13 @@ Load only the Skill and contract references required for the task before that
 query; inspect a non-memory source path later only when the prompt or a
 specific tool result identifies it.
 
-Every record under `guru-maker/` is project memory even when a prompt calls it
+Every record under `gibo/` is project memory even when a prompt calls it
 supplied, current, or Evidence. Read it through the Runtime. User-supplied
 external evidence uses ordinary project files outside that hierarchy and may
 be read with the host's normal file or research tools.
 
 Work only in the current project. Do not scan parent directories or inspect
-anything under `.guru-maker/packs/` during ordinary analysis; those source
+anything under `.gibo/packs/` during ordinary analysis; those source
 slots are provenance, not memory context.
 
 ## Direct recall with compact candidates
@@ -36,9 +36,9 @@ Start recall with one targeted compact-candidate query, returning no more than
 six records. Repeated `--kind` values are an OR filter:
 
 ```text
-gurumaker knowledge search "<query>" [--kind KIND]... [--entity ID] \
+gibo knowledge search "<query>" [--kind KIND]... [--entity ID] \
   --candidates --limit 6
-gurumaker knowledge read <exact-id> [--section NAME]
+gibo knowledge read <exact-id> [--section NAME]
 ```
 
 Candidate output omits body text and carries the record ID, kind, title,
@@ -65,11 +65,11 @@ unscoped instead of issuing separate Decision and Evidence queries.
 For a new Decision produced by that material task, this initial target query
 satisfies the curation contract's pre-write search only when its cards include
 a plausibly applicable Decision. When no such Decision card is returned and
-Guru Mode permits a new Decision write, run exactly one fallback with the same
+Record Mode permits a new Decision write, run exactly one fallback with the same
 judgment intent before writing:
 
 ```text
-gurumaker knowledge search "<judgment intent>" \
+gibo knowledge search "<judgment intent>" \
   --kind decision --candidates --limit 6
 ```
 
@@ -141,7 +141,7 @@ procedure itself. Use the repeated-kind form only when the role—not merely its
 downstream application—is genuinely ambiguous.
 
 ```text
-gurumaker knowledge search "<gap concept>" \
+gibo knowledge search "<gap concept>" \
   --kind lens --candidates --limit 6
 ```
 
@@ -149,7 +149,7 @@ When the kind is genuinely ambiguous, use repeated kind filters as one OR
 query:
 
 ```text
-gurumaker knowledge search "<gap concept>" \
+gibo knowledge search "<gap concept>" \
   --kind wiki --kind lens --kind method --candidates --limit 6
 ```
 
@@ -200,7 +200,7 @@ Use Wiki navigation only when the request calls for related concepts, effects,
 comparisons, or transfer after a Wiki has already been selected:
 
 ```text
-gurumaker knowledge neighbors <selected-wiki-id> [--json]
+gibo knowledge neighbors <selected-wiki-id> [--json]
 ```
 
 This returns compact outgoing `see_also` and incoming backlink cards. Select
@@ -219,7 +219,7 @@ Track visited IDs, then pass through authored challengers one node at a time.
 For the current node, run one exact-ID JSON search:
 
 ```text
-gurumaker knowledge search "<selected-exact-id>" --json
+gibo knowledge search "<selected-exact-id>" --json
 ```
 
 Read only later records whose authored `updates` or `contradicts` relationship

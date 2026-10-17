@@ -1,6 +1,6 @@
 ---
 name: decision
-description: Synthesize a requested point-in-time investment judgment, record a Decision and explicit relationships, review an outcome, or render the Decision Graph. Use automatically for natural-language requests asking what investment alternative to choose, buy, sell, hold, allocate, or size, or explicitly revisiting a prior Decision, even when the user does not mention Gibo or a Skill; in Guru Mode Auto, a material judgment may be recorded without a separate save request. Use also for an Execution Brief after explicit action intent. Do not use for a research-only thesis update without an investment choice, general research, memory curation, explicit lesson extraction, or Guru Pack lifecycle work.
+description: Synthesize a requested point-in-time investment judgment, record a Decision and explicit relationships, review an outcome, or render the Decision Graph. Use automatically for natural-language requests asking what investment alternative to choose, buy, sell, hold, allocate, or size, or explicitly revisiting a prior Decision, even when the user does not mention Gibo or a Skill; in Record Mode Auto, a material judgment may be recorded without a separate save request. Use also for an Execution Brief after explicit action intent. Do not use for a research-only thesis update without an investment choice, general research, memory curation, explicit lesson extraction, or Gibo Pack lifecycle work.
 ---
 
 # Gibo Decision
@@ -17,14 +17,14 @@ artifacts, and targeted project memory. Ask for clarification only when the
 unresolved ambiguity would materially change the judgment or requested action;
 never infer action intent merely from a request for analysis.
 When no referent and no supplied artifact exists, ask immediately without
-scanning project files, searching memory, or reading Guru Mode.
+scanning project files, searching memory, or reading Record Mode.
 
 Resolve every linked reference path relative to this loaded `SKILL.md`. The
 loaded Skill directory is authoritative: when it is under
 `<project>/.agents/skills/`, `../../shared/...` reaches
 `<project>/.agents/shared/...`. Never substitute a user-global `.codex` path,
 another plugin-cache path, or `skills/shared/...`. Read
-[project retrieval](../../shared/gurumaker/references/retrieval.md) before
+[project retrieval](../../shared/gibo/references/retrieval.md) before
 inspecting any prior project memory. Retrieve that memory only through a
 targeted Runtime search followed by exact-ID reads; do not enumerate or open
 memory files directly. The Runtime is the only project-memory read interface,
@@ -32,20 +32,20 @@ even when a record path or exact ID is already visible; do not use filesystem
 listing or reading commands as a shortcut. Start memory-using work with the
 Runtime query, not a recursive inventory of the workspace; scope any search
 for user-supplied evidence to its source location. Every record under
-`guru-maker/` is project memory even if the prompt calls it supplied, current,
+`gibo/` is project memory even if the prompt calls it supplied, current,
 or Evidence; only ordinary source files outside that hierarchy use filesystem
 reading. Read [research
-framing](../../shared/gurumaker/references/research-framing.md) only when
-gathering or refreshing evidence, [Guru
-Mode](../../shared/gurumaker/references/guru-mode.md) before recording a
+framing](../../shared/gibo/references/research-framing.md) only when
+gathering or refreshing evidence, [Record
+Mode](../../shared/gibo/references/record-mode.md) before recording a
 Decision, [the record
-contract](../../shared/gurumaker/references/record-contract.md) before writing,
+contract](../../shared/gibo/references/record-contract.md) before writing,
 [the in-task curation
-contract](../../shared/gurumaker/references/curation.md) before recording,
+contract](../../shared/gibo/references/curation.md) before recording,
 and [the Decision Graph
-contract](../../shared/gurumaker/references/decision-graph.md) for graph work.
-Read [the Runtime contract](../../shared/gurumaker/references/runtime.md)
-before any `gurumaker` command.
+contract](../../shared/gibo/references/decision-graph.md) for graph work.
+Read [the Runtime contract](../../shared/gibo/references/runtime.md)
+before any `gibo` command.
 
 Preserve earlier Decisions; use later authored `updates` or `contradicts`
 relationships rather than rewriting history. Re-test material prior judgment
@@ -71,7 +71,7 @@ equivalent broad workspace inventory. Pass `--workspace .` to the Runtime for
 discovery, and inspect an ordinary non-memory source path only when the prompt
 or a specific result identifies it. The initial target query also satisfies
 the curation pre-write search only when it returns a plausibly applicable
-Decision. If none is returned and Guru Mode permits a new Decision write, run
+Decision. If none is returned and Record Mode permits a new Decision write, run
 exactly one same-intent `--kind decision --candidates --limit 6` fallback
 before writing; do not reformulate it, and skip it when no Decision will be
 written. This bounded lineage check is separate from the one concept-gap
@@ -99,7 +99,7 @@ remains Research when it does not request an investment choice or explicitly
 revisit a stored Decision. If the user excludes an allocation or investment
 judgment, do not create a Decision.
 
-In an initialized workspace, resolve Guru Mode before recording. In `auto`, a
+In an initialized workspace, resolve Record Mode before recording. In `auto`, a
 material judgment or outcome review may become the minimum sufficient Decision
 without a separate save request. In `off`, analysis remains conversational
 unless the user explicitly asks to record it. If the work suggests a reusable
@@ -114,7 +114,7 @@ new Decision, never to rewrite earlier judgments; then run Decision health and
 one final knowledge check. Render the graph only when relationships change or
 the user asks, and report unresolved or skipped records. Create a non-executing
 brief only after explicit action intent; then read [the Execution Brief
-contract](../../shared/gurumaker/references/execution-brief.md) and write the
-requested brief as an ordinary project Markdown artifact. It is not Guru
-memory, so Guru Mode does not gate that artifact. Never place an order or
+contract](../../shared/gibo/references/execution-brief.md) and write the
+requested brief as an ordinary project Markdown artifact. It is not Gibo
+memory, so Record Mode does not gate that artifact. Never place an order or
 invent execution details.

@@ -9,7 +9,7 @@ git commit -s
 ```
 
 Keep the product scoped to project memory, deterministic CLI operations,
-data-only Guru Packs, and the derived graph. Execution integrations stay
+data-only Gibo Packs, and the derived graph. Execution integrations stay
 external. Keep credentials, API keys, portfolio data, private research, and
 user memory out of the repository.
 

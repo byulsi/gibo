@@ -1,6 +1,6 @@
 # Retrieval Scaling and Memory Lifecycle
 
-Guru Maker keeps local Markdown and authored relationships authoritative.
+Gibo keeps local Markdown and authored relationships authoritative.
 Search performance, retrieval quality, memory activation, and curation are
 separate concerns. A measured failure in one does not automatically justify an
 index, embeddings, generated summaries, or a RAG service.
@@ -12,7 +12,7 @@ exact-reads selected records. An exact ID is the stable internal authority and
 control address for reading, authored relationships, and Decision lineage; it
 is not syntax users must know.
 
-The Runtime searches only project-owned Markdown under `guru-maker/`:
+The Runtime searches only project-owned Markdown under `gibo/`:
 
 - repeated `--kind` values form one OR filter, and duplicate requested
   collections are discovered only once;
@@ -186,7 +186,7 @@ separate slices for:
 
 Also report useful-read ratio, activation fan-out, retrieval-call count,
 context tokens, p50/p95 activation latency, and obsolete-memory use. Include
-natural-language requests without Guru Maker or record-kind cues, terse
+natural-language requests without Gibo or record-kind cues, terse
 follow-ups, challenger lineages, true no-match cases, unrelated work, and
 fresh-eyes requests.
 
@@ -235,7 +235,7 @@ These are evaluation gates, not promised features.
 If direct scan misses a stated latency or peak-memory target on a
 representative corpus, evaluate a disposable fielded lexical index or
 compressed postings before semantic retrieval. Markdown remains canonical.
-Derived state must be atomically rebuildable, ignore `.guru-maker/packs/`,
+Derived state must be atomically rebuildable, ignore `.gibo/packs/`,
 require no daemon, and fail open to the correct direct scan when missing,
 corrupt, stale, or incompatible. Exact IDs, numeric literals, and authored
 metadata remain the control lane ahead of probabilistic ranking.

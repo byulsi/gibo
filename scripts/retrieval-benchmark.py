@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare deterministic Guru Maker retrieval against the v0.0.3 Runtime."""
+"""Compare deterministic Gibo retrieval against the v0.0.3 Runtime."""
 
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ def build_baseline(temporary: Path) -> tuple[Path, Path]:
         capture=False,
     )
     suffix = ".exe" if os.name == "nt" else ""
-    return target_root / "release" / f"gurumaker{suffix}", source_root
+    return target_root / "release" / f"gibo{suffix}", source_root
 
 
 def choose_index(documents: int, residue: int, fraction: float) -> int:
@@ -295,7 +295,7 @@ def prepare(
     excluded_target = choose_index(documents, 3, 0.70)
     for index in range(documents):
         kind = KINDS[index % len(KINDS)]
-        directory = workspace / "guru-maker" / kind
+        directory = workspace / "gibo" / kind
         directory.mkdir(parents=True, exist_ok=True)
         (directory / f"scale-record-{index:05}.md").write_text(
             record(index, target, union_target, excluded_target), encoding="utf-8"
@@ -305,7 +305,7 @@ def prepare(
     markdown_bytes = sum(
         path.stat().st_size
         for kind in KINDS
-        for path in (workspace / "guru-maker" / kind).glob("*.md")
+        for path in (workspace / "gibo" / kind).glob("*.md")
     )
     check = json.loads(
         run(
@@ -508,7 +508,7 @@ def main() -> int:
     if not args.binary and args.candidate_revision:
         raise SystemExit("--candidate-revision requires --binary")
 
-    temporary = Path(tempfile.mkdtemp(prefix="guru-maker-retrieval-benchmark-"))
+    temporary = Path(tempfile.mkdtemp(prefix="gibo-retrieval-benchmark-"))
     try:
         if args.binary:
             candidate_binary = args.binary.resolve()
@@ -517,7 +517,7 @@ def main() -> int:
         else:
             run(["cargo", "build", "--release", "--locked"], cwd=ROOT, capture=False)
             suffix = ".exe" if os.name == "nt" else ""
-            candidate_binary = ROOT / "target" / "release" / f"gurumaker{suffix}"
+            candidate_binary = ROOT / "target" / "release" / f"gibo{suffix}"
             candidate_revision = source_revision()
             candidate_source_sha256 = runtime_source_sha256(ROOT)
 
@@ -527,7 +527,7 @@ def main() -> int:
         else:
             baseline_binary, baseline_source = build_baseline(temporary)
         if not candidate_binary.is_file() or not baseline_binary.is_file():
-            raise SystemExit("candidate or baseline Guru Maker binary was not found")
+            raise SystemExit("candidate or baseline Gibo binary was not found")
 
         baseline_version = run([str(baseline_binary), "--version"]).strip()
         if baseline_version != "0.0.3":

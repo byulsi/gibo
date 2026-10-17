@@ -46,21 +46,21 @@ jobs:
           python3 -m json.tool .claude-plugin/plugin.json >/dev/null
           python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
           python3 -m json.tool hooks/hooks.json >/dev/null
-          test -d shared/gurumaker
+          test -d shared/gibo
           for skill in research memory decision train packs; do
             test -f "skills/$skill/SKILL.md"
             test "$(sed -n '2p' "skills/$skill/SKILL.md")" = "name: $skill"
           done
           test "$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d '[:space:]')" = 5
-          test -f shared/gurumaker/references/runtime.md
-          test -x shared/gurumaker/scripts/gurumaker.sh
+          test -f shared/gibo/references/runtime.md
+          test -x shared/gibo/scripts/gibo.sh
           test -x hooks/run-hook.sh
-          sh -n shared/gurumaker/scripts/gurumaker.sh
+          sh -n shared/gibo/scripts/gibo.sh
           sh -n hooks/run-hook.sh
-          test -f target/release/gurumaker
+          test -f target/release/gibo
 
       - name: Test isolated Runtime environment
-        run: GURUMAKER_TEST_RUNTIME_BIN="$PWD/target/release/gurumaker" scripts/test-env.sh
+        run: GIBO_TEST_RUNTIME_BIN="$PWD/target/release/gibo" scripts/test-env.sh
 
   msrv:
     name: Rust 1.82 compatibility
@@ -102,12 +102,12 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          export GURUMAKER_RUNTIME_BIN="$PWD/target/debug/gurumaker"
-          sh shared/gurumaker/scripts/gurumaker.sh --runtime-status
-          test "$(sh shared/gurumaker/scripts/gurumaker.sh --version)" = \
-            "$(tr -d '[:space:]' < shared/gurumaker/runtime/version)"
-          export HOOK_WORKSPACE="$RUNNER_TEMP/guru-maker-hook-workspace"
-          target/debug/gurumaker init "$HOOK_WORKSPACE"
+          export GIBO_RUNTIME_BIN="$PWD/target/debug/gibo"
+          sh shared/gibo/scripts/gibo.sh --runtime-status
+          test "$(sh shared/gibo/scripts/gibo.sh --version)" = \
+            "$(tr -d '[:space:]' < shared/gibo/runtime/version)"
+          export HOOK_WORKSPACE="$RUNNER_TEMP/gibo-hook-workspace"
+          target/debug/gibo init "$HOOK_WORKSPACE"
           export CLAUDE_PLUGIN_ROOT="$PWD"
           HOOK_INPUT=$(
             python3 -c 'import json, os; print(json.dumps({
@@ -117,7 +117,7 @@ jobs:
               "tool_input": {
                 "file_path": os.path.join(
                   os.environ["HOOK_WORKSPACE"],
-                  ".guru-maker/packs/lens/element.md"
+                  ".gibo/packs/lens/element.md"
                 )
               }
             }))'
@@ -136,27 +136,27 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $env:GURUMAKER_RUNTIME_BIN = (
-            Resolve-Path "target/debug/gurumaker.exe"
+          $env:GIBO_RUNTIME_BIN = (
+            Resolve-Path "target/debug/gibo.exe"
           ).Path
-          & "shared/gurumaker/scripts/gurumaker.ps1" --runtime-status
-          $actual = & "shared/gurumaker/scripts/gurumaker.ps1" --version
+          & "shared/gibo/scripts/gibo.ps1" --runtime-status
+          $actual = & "shared/gibo/scripts/gibo.ps1" --version
           $expected = (
-            Get-Content "shared/gurumaker/runtime/version" -Raw
+            Get-Content "shared/gibo/runtime/version" -Raw
           ).Trim()
           if ($actual.Trim() -ne $expected) {
             throw "Runtime wrapper returned $actual, expected $expected"
           }
 
-          Remove-Item Env:GURUMAKER_RUNTIME_BIN
+          Remove-Item Env:GIBO_RUNTIME_BIN
           $target = "x86_64-pc-windows-msvc"
           $releaseBasePath = Join-Path $env:RUNNER_TEMP "releases/download"
           $releaseDirectory = Join-Path $releaseBasePath "v$expected"
-          $env:GURUMAKER_RUNTIME_HOME = Join-Path $env:RUNNER_TEMP "runtime-home"
+          $env:GIBO_RUNTIME_HOME = Join-Path $env:RUNNER_TEMP "runtime-home"
           New-Item -ItemType Directory -Force -Path $releaseDirectory |
             Out-Null
-          $artifact = "gurumaker-$target.exe"
-          Copy-Item "target/debug/gurumaker.exe" (
+          $artifact = "gibo-$target.exe"
+          Copy-Item "target/debug/gibo.exe" (
             Join-Path $releaseDirectory $artifact
           )
           $hash = (
@@ -167,21 +167,21 @@ jobs:
           Set-Content -Encoding ascii (
             Join-Path $releaseDirectory "SHA256SUMS"
           ) "$hash  $artifact"
-          $env:GURUMAKER_RELEASE_BASE_URL = (
+          $env:GIBO_RELEASE_BASE_URL = (
             [Uri]::new(
               (Resolve-Path $releaseBasePath).Path +
               [IO.Path]::DirectorySeparatorChar
             ).AbsoluteUri
           ).TrimEnd("/")
 
-          & "shared/gurumaker/scripts/gurumaker.ps1" --runtime-install
-          $installedVersion = & "shared/gurumaker/scripts/gurumaker.ps1" --version
+          & "shared/gibo/scripts/gibo.ps1" --runtime-install
+          $installedVersion = & "shared/gibo/scripts/gibo.ps1" --version
           if ($installedVersion.Trim() -ne $expected) {
             throw "Installed Runtime returned $installedVersion, expected $expected"
           }
 
-          $hookWorkspace = Join-Path $env:RUNNER_TEMP "guru-maker-hook-workspace"
-          & "target/debug/gurumaker.exe" init $hookWorkspace
+          $hookWorkspace = Join-Path $env:RUNNER_TEMP "gibo-hook-workspace"
+          & "target/debug/gibo.exe" init $hookWorkspace
           $env:CLAUDE_PLUGIN_ROOT = (Get-Location).Path
           $hookInput = @{
             cwd = $hookWorkspace
@@ -189,7 +189,7 @@ jobs:
             tool_name = "Write"
             tool_input = @{
               file_path = Join-Path $hookWorkspace `
-                ".guru-maker/packs/lens/element.md"
+                ".gibo/packs/lens/element.md"
             }
           } | ConvertTo-Json -Compress -Depth 4
           $startInfo = [Diagnostics.ProcessStartInfo]::new()

@@ -6,7 +6,7 @@ deterministic Runtime search, health, and validation. It is not a background
 process, a fixed agent workflow, or a reason to retain otherwise ineligible
 content.
 
-Read the project Guru Mode before the first possible write. In `auto`, curate
+Read the project Record Mode before the first possible write. In `auto`, curate
 only when completed work produces an eligible durable improvement. In `off`,
 change only the record explicitly requested by the user unless the user also
 requests broader curation. Neither mode authorizes initialization, Pack or Git
@@ -81,7 +81,7 @@ For an eligible write:
    limiting the applicable kind and returning at most six:
 
    ```text
-   gurumaker knowledge search "<query>" --kind <kind> --candidates --limit 6
+   gibo knowledge search "<query>" --kind <kind> --candidates --limit 6
    ```
 
    Reuse an applicable target or relationship search already completed in the
@@ -101,9 +101,9 @@ For an eligible write:
    neighborhood; an entity match alone does not authorize unrelated cleanup.
    Change no more than five existing records in the task.
 4. For each touched kind, run
-   `gurumaker knowledge health --kind <kind> --workspace <project-root>`.
+   `gibo knowledge health --kind <kind> --workspace <project-root>`.
    Health advisories inform host judgment; they do not authorize extra edits.
-5. Run `gurumaker knowledge check --workspace <project-root>` once after the
+5. Run `gibo knowledge check --workspace <project-root>` once after the
    complete memory edit unless the optional hook already returned that result.
    This is one knowledge check for the whole bounded write, not one per file.
    Run it as a standalone Runtime invocation so its exit status is observed;

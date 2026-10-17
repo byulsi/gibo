@@ -8,8 +8,8 @@ adapted for Claude Code. The original repository is the `upstream` remote.
 Gibo is an investment memory layer for Claude Code. Host
 agents own reasoning, research strategy, tool selection, delegation, file
 editing, and permissions. Gibo owns only the Markdown record contract,
-deterministic CLI operations, the project-local Guru Mode setting, GitHub-backed
-Guru Packs, and the derived Decision Graph, plus minimal native-edit guardrails
+deterministic CLI operations, the project-local Record Mode setting, GitHub-backed
+Gibo Packs, and the derived Decision Graph, plus minimal native-edit guardrails
 around that state.
 
 Do not add a fixed Head Manager, Portfolio Manager, Risk Manager, agent router,
@@ -23,7 +23,7 @@ runtime.
 | --- | --- |
 | `src/` | The host-neutral Rust CLI and deterministic record, pack, and graph behavior. |
 | `skills/{research,memory,decision,train,packs}/` | The five public Agent Skills and their concise trigger surfaces. |
-| `shared/gurumaker/` | Canonical shared Runtime bundle, wrappers, and progressively loaded references; never a public Skill. |
+| `shared/gibo/` | Canonical shared Runtime bundle, wrappers, and progressively loaded references; never a public Skill. |
 | `.claude-plugin/` | Claude Code discovery and marketplace metadata only. |
 | `hooks/` | Optional cross-host edit guardrails; the Rust Runtime owns their decisions. |
 | `.github/workflows/` | Cross-platform validation and tag-driven Runtime releases. |
@@ -50,11 +50,11 @@ incompatibility requires more.
   measured corpus-size, retrieval-quality, or tool-interface failure.
 - Keep ordinary retrieval project-scoped: search, then read selected IDs. Do
   not require catalog, validation, raw Git, or parent-directory scans.
-- Guru Mode defaults to `auto` for minimum, reviewable in-task memory
+- Record Mode defaults to `auto` for minimum, reviewable in-task memory
   improvements in an initialized project. `off` requires an explicit request
   for every memory change. Neither mode initializes projects, captures sessions
   in the background, or authorizes Pack, Git, or external execution actions.
-- Keep Guru Packs data-only. Each Pack contains exactly one hierarchical Wiki,
+- Keep Gibo Packs data-only. Each Pack contains exactly one hierarchical Wiki,
   Lens, or Method collection, never Evidence, Decision, hooks, scripts, static
   payloads, MCP servers, or order code.
 - Record only reusable knowledge and decision-grade work. Do not require a
@@ -69,27 +69,26 @@ triggers, job boundaries, permissions, build matrices, or release publication.
 
 - Host plugins expose the five public Skills. Their shared POSIX and PowerShell
   wrappers select the exact Rust Runtime pinned in
-  `shared/gurumaker/runtime/version`.
+  `shared/gibo/runtime/version`.
 - Keep the wrappers thin. They may locate, download, verify, and launch the
   canonical Rust binary; they must not reimplement CLI behavior.
-- Keep Cargo and the pinned Runtime versions equal. Gibo still uses the
-  upstream Guru Maker Runtime release, so the Gibo plugin version is separate
-  from the Runtime version until Gibo ships its own Runtime.
+- Keep the Cargo, Claude plugin, and pinned Runtime versions equal. Product
+  contract tests and the release workflow fail on a mismatch.
 - Release raw target binaries and `SHA256SUMS` under an immutable `v<version>`
   GitHub tag. Install into versioned user-data paths without changing `PATH`.
-- A product update must not rewrite project memory or update Guru Packs.
-  Guru Pack updates remain explicit project-local operations.
+- A product update must not rewrite project memory or update Gibo Packs.
+  Gibo Pack updates remain explicit project-local operations.
 - Do not add npm, `npx`, a package-manager runtime, an install hook, a daemon,
   or an MCP server to solve Runtime delivery.
 
 ## Hook boundary
 
 Read [Hook guardrails](docs/hooks.md) before changing `hooks/`, the internal
-`gurumaker hook` command, workspace detection, or post-edit validation.
+`gibo hook` command, workspace detection, or post-edit validation.
 
 - Keep hooks optional. The public Skills and CLI must remain complete when a
   host disables or has not trusted plugin hooks.
-- Limit plugin hooks to native file-edit interception: protect installed Guru
+- Limit plugin hooks to native file-edit interception: protect installed Gibo
   Packs before an edit and validate local Markdown after an edit.
 - Keep path inspection and validation in the Rust Runtime. POSIX, PowerShell,
   and host configuration files only locate the project and launch it.
@@ -126,12 +125,12 @@ Read the paired contract before changing these surfaces:
 | --- | --- |
 | Record parsing, search, packs, graph, or hooks | `docs/knowledge-model.md`, `docs/decision-memory.md`, or `docs/hooks.md`, plus focused Rust tests. |
 | Public Skill trigger or shared reference | `README.md`, `installation.md`, `docs/architecture.md`, and `tests/product_contract.rs`. |
-| Runtime wrapper, version, target, or release asset | `docs/runtime-distribution.md`, `docs/ci-cd.md`, shared wrapper tests, `Cargo.toml`, and `shared/gurumaker/runtime/version`. |
+| Runtime wrapper, version, target, or release asset | `docs/runtime-distribution.md`, `docs/ci-cd.md`, shared wrapper tests, `Cargo.toml`, and `shared/gibo/runtime/version`. |
 | CI job or validation command | `docs/ci-cd.md`, `docs/development.md`, and the matching local script. |
 
 Run `scripts/verify.sh` before handing off a material change. It runs the Rust
 quality gate and a Runtime smoke in a freshly created temporary directory.
-The harness sets its own `GURUMAKER_RUNTIME_HOME` and release fixture, never
+The harness sets its own `GIBO_RUNTIME_HOME` and release fixture, never
 uses a maintainer's installed Runtime or project memory. Use
 `scripts/test-env.sh --keep` only when inspecting a failed fixture; it prints
 the temporary directory for manual cleanup.

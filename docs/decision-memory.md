@@ -1,6 +1,6 @@
 # Decision Memory and Graph
 
-Guru Maker records material investment judgments and reusable lessons. Narrow
+Gibo records material investment judgments and reusable lessons. Narrow
 factual answers, status checks, and exploratory notes remain conversational.
 
 ## The Reviser principle
@@ -30,7 +30,7 @@ read reusable record covers the single most consequential role, make the one
 concept-gap query allowed by the retrieval contract and exact-read one selected
 Wiki, Lens, or Method. Do not fan out by kind or reformulate a gap no-match.
 
-When Guru Mode permits a Decision write and the initial mixed Top-6 contains no
+When Record Mode permits a Decision write and the initial mixed Top-6 contains no
 plausibly applicable Decision, make one same-intent Decision-only fallback
 search before writing. This is a lineage and duplicate check for a kind that
 may have been displaced by higher-ranked Evidence, not another concept query.
@@ -49,7 +49,7 @@ record. Otherwise label it as illustrative or unresolved.
 ## Decision element
 
 Use one Markdown element per material judgment anywhere within the single
-`guru-maker/decision/` hierarchy:
+`gibo/decision/` hierarchy:
 
 ```markdown
 ---
@@ -96,7 +96,7 @@ current fact.
 
 ## Learning
 
-Guru Mode is `auto` by default. In `auto`, a completed material judgment or
+Record Mode is `auto` by default. In `auto`, a completed material judgment or
 outcome review in an initialized project may produce the minimum sufficient
 Decision or reusable improvement. In `off`, the same analysis stays
 conversational unless the user explicitly asks to record or retain it. Auto is
@@ -108,17 +108,17 @@ Evidence and Decisions remain point-in-time history. A substantive later
 Evidence correction becomes a new element that updates or contradicts the
 earlier Evidence. Changes remain uncommitted until a separate Git request.
 
-Installed Pack sources remain clean under `.guru-maker/packs/`. Their local
+Installed Pack sources remain clean under `.gibo/packs/`. Their local
 copies are ordinary project memory and may evolve independently.
 
 ## Derived graph
 
 ```bash
-gurumaker graph
+gibo graph
 ```
 
-The command scans only local `guru-maker/` elements and writes
-`guru-maker/decision-graph.html`. Evidence URLs become source nodes and valid
+The command scans only local `gibo/` elements and writes
+`gibo/decision-graph.html`. Evidence URLs become source nodes and valid
 authored relationships define analytical edges. Pack source nodes are never
 included.
 

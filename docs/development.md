@@ -1,6 +1,6 @@
 # Development and Validation
 
-Guru Maker targets stable Rust and ships one native `gurumaker` binary.
+Gibo targets stable Rust and ships one native `gibo` binary.
 
 ```bash
 scripts/verify.sh
@@ -15,10 +15,10 @@ checks, and `scripts/test-env.sh`.
 `scripts/test-env.sh` creates a fresh temporary directory outside the checkout.
 It builds or reuses the local debug Runtime, serves it through a local
 file-based release fixture, verifies checksum-gated installation, initializes
-two independent workspaces, and checks that Guru Mode defaults to `auto` and
+two independent workspaces, and checks that Record Mode defaults to `auto` and
 remains project-scoped. The harness sets its own
-`GURUMAKER_RUNTIME_HOME` and clears external Runtime overrides, so it cannot
-read or modify a developer's normal Runtime directory, Guru Maker projects, or
+`GIBO_RUNTIME_HOME` and clears external Runtime overrides, so it cannot
+read or modify a developer's normal Runtime directory, Gibo projects, or
 Git credentials.
 
 Run it directly during wrapper or workspace work:
@@ -56,7 +56,7 @@ results.
 
 ## Model-backed agent E2E
 
-Gibo removed Guru Maker's Codex-only agent evaluation harness
+Gibo removed Gibo's Codex-only agent evaluation harness
 (`scripts/e2e-agent-eval.py` and `tests/e2e/cases.json`). A Claude Code
 evaluation has not been written yet. The original 69-case matrix remains in
 the Git history as a starting point.
@@ -78,9 +78,9 @@ Codex and Claude Code configuration untouched.
 
 Behavioral validation uses fresh temporary projects:
 
-1. initialize two projects and install different kind-specific Guru Pack
+1. initialize two projects and install different kind-specific Gibo Pack
    source slots;
-2. confirm Guru Mode defaults to `auto`, an explicit `off` persists, and the
+2. confirm Record Mode defaults to `auto`, an explicit `off` persists, and the
    setting remains isolated by project;
 3. confirm each project's catalog and graph state remain isolated;
 4. validate minimal frontmatter, timezone-aware `as_of`, Evidence provenance,
@@ -116,12 +116,12 @@ it to a release.
 Runtime delivery changes also require:
 
 ```bash
-sh -n shared/gurumaker/scripts/gurumaker.sh
-GURUMAKER_RUNTIME_BIN="$PWD/target/debug/gurumaker" \
-  sh shared/gurumaker/scripts/gurumaker.sh --runtime-status
+sh -n shared/gibo/scripts/gibo.sh
+GIBO_RUNTIME_BIN="$PWD/target/debug/gibo" \
+  sh shared/gibo/scripts/gibo.sh --runtime-status
 ```
 
-Run the equivalent `gurumaker.ps1` smoke on Windows. CI runs the same isolated
+Run the equivalent `gibo.ps1` smoke on Windows. CI runs the same isolated
 release-fixture install, plus native wrapper and hook-launcher checks.
 
 Before creating a release, update the same exact version in:
@@ -129,7 +129,7 @@ Before creating a release, update the same exact version in:
 - `Cargo.toml`;
 - `.codex-plugin/plugin.json`;
 - `.claude-plugin/plugin.json`;
-- `shared/gurumaker/runtime/version`;
+- `shared/gibo/runtime/version`;
 - `CHANGELOG.md`.
 
 Push an exact `v<version>` tag only after validation. The tag-driven release

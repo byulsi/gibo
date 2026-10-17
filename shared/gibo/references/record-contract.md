@@ -1,7 +1,7 @@
 # Memory element contract
 
 Each project has one `wiki`, `lens`, `method`, `evidence`, and `decision`
-collection under `guru-maker/`. Elements may use nested subject directories
+collection under `gibo/`. Elements may use nested subject directories
 inside that one collection, and every `.md` file begins with:
 
 ```yaml
@@ -141,5 +141,5 @@ one hop under the retrieval contract.
 
 Before and after a local edit, follow [the bounded in-task curation
 contract](curation.md). Run
-`gurumaker knowledge check --workspace <project-root>` once after the complete
+`gibo knowledge check --workspace <project-root>` once after the complete
 edit unless the optional hook already returned the result.

@@ -4,7 +4,7 @@ use std::process::{Command, Output};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_gurumaker")
+    env!("CARGO_BIN_EXE_gibo")
 }
 
 fn temp_dir(label: &str) -> PathBuf {
@@ -13,7 +13,7 @@ fn temp_dir(label: &str) -> PathBuf {
         .unwrap()
         .as_nanos();
     let path = std::env::temp_dir().join(format!(
-        "guru-maker-pack-links-{label}-{}-{nonce}",
+        "gibo-pack-links-{label}-{}-{nonce}",
         std::process::id()
     ));
     fs::create_dir_all(&path).unwrap();
@@ -49,7 +49,7 @@ fn manifest(root: &Path, elements: &[&str]) {
         .collect::<Vec<_>>()
         .join(",\n");
     fs::write(
-        root.join("guru-pack.json"),
+        root.join("gibo-pack.json"),
         format!(
             "{{\n  \"schema_version\": 1,\n  \"kind\": \"wiki\",\n  \"elements\": [\n{elements}\n  ]\n}}\n"
         ),
@@ -92,6 +92,36 @@ fn wiki_pack_check_requires_every_see_also_target_in_the_manifest() {
 }
 
 #[test]
+fn pack_check_reads_a_legacy_guru_maker_manifest() {
+    let root = temp_dir("legacy-manifest");
+    let pack = root.join("pack");
+    fs::create_dir_all(pack.join("concepts")).unwrap();
+    fs::write(
+        pack.join("concepts/source.md"),
+        wiki("wiki:source", "Source concept", &[]),
+    )
+    .unwrap();
+    manifest(&pack, &["concepts/source.md"]);
+    fs::rename(pack.join("gibo-pack.json"), pack.join("guru-pack.json")).unwrap();
+
+    let legacy = command(&["pack", "check", pack.to_str().unwrap()]);
+    assert!(
+        legacy.status.success(),
+        "{}",
+        String::from_utf8_lossy(&legacy.stderr)
+    );
+
+    fs::write(pack.join("guru-pack.json"), "not json").unwrap();
+    manifest(&pack, &["concepts/source.md"]);
+    let preferred = command(&["pack", "check", pack.to_str().unwrap()]);
+    assert!(
+        !preferred.status.success(),
+        "a stray legacy manifest beside gibo-pack.json must not be allowed in the Pack tree"
+    );
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn wiki_pack_create_does_not_follow_or_auto_add_see_also_targets() {
     let root = temp_dir("create-closure");
     let workspace = root.join("workspace");
@@ -102,8 +132,8 @@ fn wiki_pack_create_does_not_follow_or_auto_add_see_also_targets() {
         String::from_utf8_lossy(&initialized.stderr)
     );
 
-    let source = workspace.join("guru-maker/wiki/source.md");
-    let target = workspace.join("guru-maker/wiki/target.md");
+    let source = workspace.join("gibo/wiki/source.md");
+    let target = workspace.join("gibo/wiki/target.md");
     fs::write(
         &source,
         wiki("wiki:source", "Source concept", &["wiki:target"]),
@@ -141,7 +171,7 @@ fn wiki_pack_create_does_not_follow_or_auto_add_see_also_targets() {
         "{}",
         String::from_utf8_lossy(&created.stderr)
     );
-    let manifest = fs::read_to_string(complete.join("guru-pack.json")).unwrap();
+    let manifest = fs::read_to_string(complete.join("gibo-pack.json")).unwrap();
     assert!(manifest.contains("\"source.md\""));
     assert!(manifest.contains("\"target.md\""));
     fs::remove_dir_all(root).unwrap();

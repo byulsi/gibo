@@ -6,7 +6,7 @@
 user request
   -> Codex, Claude Code, or another host agent
   -> one of five public Agent Skills
-  -> project Guru Mode gates optional memory writes
+  -> project Record Mode gates optional memory writes
   -> shared wrapper resolves the pinned Rust Runtime
   -> Runtime returns compact deterministic candidates
   -> host selects and exact-reads relevant records
@@ -28,7 +28,7 @@ editing, and permissions.
 Each project owns one hierarchical collection of each kind:
 
 ```text
-guru-maker/{wiki,lens,method,evidence,decision}/
+gibo/{wiki,lens,method,evidence,decision}/
 ```
 
 The kinds share a common Markdown envelope but intentionally have different
@@ -47,10 +47,10 @@ or automatic context expansion. A Wiki may author exact local Wiki IDs in
 does not affect search relevance, recurse, load context automatically, or
 enter the Decision Graph.
 
-The tracked `.guru-maker/mode` setting is `auto` or `off`. `auto` is the
+The tracked `.gibo/mode` setting is `auto` or `off`. `auto` is the
 default. It permits minimum, reviewable in-task memory improvements inside an
 already initialized project, including when a natural investment request does
-not name Guru Maker or a Skill. The host selects the matching public Skill;
+not name Gibo or a Skill. The host selects the matching public Skill;
 there is no fixed router, prompt hook, or background capture. `off` requires an
 explicit user request for every memory change. The setting does not authorize
 initialization, Pack lifecycle, Git, or external execution.
@@ -58,7 +58,7 @@ initialization, Pack lifecycle, Git, or external execution.
 A project may also have one installed source Pack per reusable kind:
 
 ```text
-.guru-maker/packs/{wiki,lens,method}/
+.gibo/packs/{wiki,lens,method}/
 ```
 
 Each source checkout is a clean GitHub repository at an exact commit.
@@ -68,7 +68,7 @@ context, graphed, or edited. Updating it never mutates the project-owned copy.
 
 ## Retrieval
 
-Queries recursively scan only local Markdown under `guru-maker/`. Exact IDs,
+Queries recursively scan only local Markdown under `gibo/`. Exact IDs,
 entities, aliases, titles, summaries, periods, headings, and content contribute
 to lexical relevance. Compact candidate search omits bodies and explains its
 match; the host selects one to three records and exact-reads only those.
@@ -77,7 +77,7 @@ and control lane for reads, relationships, and lineage, not user-facing query
 syntax. The Runtime is the only project-memory read interface, even when a
 record path or ID is visible. Memory-using work starts with that query rather
 than a recursive workspace inventory; inspection of user-supplied evidence
-remains scoped to its source path. Every `guru-maker/` record is project memory
+remains scoped to its source path. Every `gibo/` record is project memory
 regardless of whether it is described as supplied, current, or Evidence;
 ordinary external source files live outside that hierarchy. After a no-match
 or partial-only result, one bounded normalization is allowed when an alias,
@@ -104,7 +104,7 @@ consequential role, one compact concept-gap query may select one Wiki, Lens, or
 Method. The host exposes missing, stale, or inapplicable inputs and grounds
 consequential thresholds, allocations, and calculations.
 
-When Guru Mode permits a Decision write, the mixed target query satisfies
+When Record Mode permits a Decision write, the mixed target query satisfies
 pre-write selection only when it returned a plausibly applicable Decision.
 Otherwise one same-intent Decision-only fallback protects lineage from
 Evidence-dominated Top-6 results. This lane is separate from the concept-gap
@@ -135,14 +135,14 @@ source nodes, and inferred relationships do not exist in that graph.
 
 ## Hooks and Runtime
 
-The optional pre-edit hook protects `.guru-maker/packs/`. The post-edit hook
-validates only edited local Markdown under `guru-maker/`. Hooks do not search,
+The optional pre-edit hook protects `.gibo/packs/`. The post-edit hook
+validates only edited local Markdown under `gibo/`. Hooks do not search,
 inject context, save memory, update Packs, render graphs, or perform Git
 actions.
 
 Host plugins share one version-pinned Runtime bundle. Updating the product
 selects a new Runtime without changing project memory or Pack sources. Pack
-updates remain separate explicit `gurumaker pack update` operations.
+updates remain separate explicit `gibo pack update` operations.
 
 ## Agent behavior
 
@@ -155,12 +155,12 @@ public Skill descriptions. Material initialized research and judgments begin
 with a compact target-memory query; narrow facts and unrelated tasks do not.
 The
 host agent determines research strategy and applies retrieved local elements
-as optional context rather than authority. When useful, Guru Research combines
+as optional context rather than authority. When useful, Gibo Research combines
 the smallest suitable set of host-available research skills, tools, and data
 connectors, then evaluates and normalizes their outputs before synthesis.
 Current documents or datasets supplied in the task remain external research
 evidence rather than project memory. Skill routing follows task intent, not
-asset class or analytical method. Guru Mode separately determines whether the
+asset class or analytical method. Record Mode separately determines whether the
 completed task may improve local memory.
 
 Authorized writes use bounded in-task curation rather than a user-operated

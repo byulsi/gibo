@@ -8,6 +8,9 @@ use std::process::{Command, Output};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const PACK_KINDS: &[&str] = &["wiki", "lens", "method"];
+pub const PACK_MANIFEST: &str = "gibo-pack.json";
+/// Manifest name used by Packs published for the original Guru Maker.
+pub const LEGACY_PACK_MANIFEST: &str = "guru-pack.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -78,30 +81,43 @@ pub fn pack_target(workspace_root: &Path, kind: &str) -> Result<PathBuf, String>
     Ok(workspace::pack_directory(workspace_root).join(kind))
 }
 
+/// The Gibo manifest wins; a Pack with only the legacy Guru Maker manifest is still read.
+fn manifest_name(root: &Path) -> &'static str {
+    let exists = |name: &str| fs::symlink_metadata(root.join(name)).is_ok();
+    if !exists(PACK_MANIFEST) && exists(LEGACY_PACK_MANIFEST) {
+        LEGACY_PACK_MANIFEST
+    } else {
+        PACK_MANIFEST
+    }
+}
+
 pub fn validate_manifest(root: &Path) -> Result<PackManifest, String> {
     let root_metadata = fs::symlink_metadata(root)
         .map_err(|_| "pack root must be an existing non-symlink directory".to_string())?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
         return Err("pack root must be an existing non-symlink directory".into());
     }
-    let manifest_path = root.join("guru-pack.json");
+    let manifest_name = manifest_name(root);
+    let manifest_path = root.join(manifest_name);
     let metadata = fs::symlink_metadata(&manifest_path)
-        .map_err(|_| "pack must contain a non-symlink root guru-pack.json".to_string())?;
+        .map_err(|_| format!("pack must contain a non-symlink root {PACK_MANIFEST}"))?;
     if metadata.file_type().is_symlink() || !metadata.is_file() {
-        return Err("pack must contain a non-symlink root guru-pack.json".into());
+        return Err(format!(
+            "pack must contain a non-symlink root {manifest_name}"
+        ));
     }
     let content = fs::read_to_string(&manifest_path)
-        .map_err(|_| "guru-pack.json must be valid UTF-8 JSON".to_string())?;
+        .map_err(|_| format!("{manifest_name} must be valid UTF-8 JSON"))?;
     let value: Value = serde_json::from_str(&content)
-        .map_err(|_| "guru-pack.json must be valid JSON".to_string())?;
+        .map_err(|_| format!("{manifest_name} must be valid JSON"))?;
     let manifest: PackManifest = serde_json::from_value(value)
-        .map_err(|error| format!("guru-pack.json has an invalid shape: {error}"))?;
+        .map_err(|error| format!("{manifest_name} has an invalid shape: {error}"))?;
     if manifest.schema_version != 1 {
-        return Err("guru-pack.json schema_version must be integer 1".into());
+        return Err(format!("{manifest_name} schema_version must be integer 1"));
     }
     require_pack_kind(&manifest.kind)?;
     if manifest.elements.is_empty() {
-        return Err("guru-pack.json elements must be a non-empty list".into());
+        return Err(format!("{manifest_name} elements must be a non-empty list"));
     }
 
     let mut paths = HashSet::new();
@@ -145,7 +161,7 @@ pub fn validate_manifest(root: &Path) -> Result<PackManifest, String> {
         .elements
         .iter()
         .map(String::as_str)
-        .chain(["guru-pack.json"])
+        .chain([manifest_name])
         .collect::<HashSet<_>>();
     let mut allowed_directories = HashSet::new();
     for element in &manifest.elements {
@@ -187,7 +203,7 @@ pub fn install_pack(
                 manifest.kind
             ));
         }
-        let local = workspace_root.join("guru-maker").join(&manifest.kind);
+        let local = workspace_root.join("gibo").join(&manifest.kind);
         ensure_empty_directory(&local, &manifest.kind)?;
 
         let staged_local = staging_path(&parent, &format!("local-{}", manifest.kind));
@@ -371,7 +387,7 @@ pub fn create_pack(
         };
         let rendered =
             serde_json::to_string_pretty(&manifest).map_err(|error| error.to_string())?;
-        fs::write(destination.join("guru-pack.json"), format!("{rendered}\n")).map_err(io_error)?;
+        fs::write(destination.join(PACK_MANIFEST), format!("{rendered}\n")).map_err(io_error)?;
         validate_manifest(destination)
     })();
     if result.is_err() {
@@ -422,9 +438,9 @@ fn validate_local_element(path: &Path, kind: &str) -> Result<String, String> {
                     .parent()
                     .and_then(Path::file_name)
                     .and_then(|value| value.to_str())
-                    == Some("guru-maker")
+                    == Some("gibo")
         })
-        .ok_or_else(|| format!("elements for a {kind} Pack must be under guru-maker/{kind}/"))?;
+        .ok_or_else(|| format!("elements for a {kind} Pack must be under gibo/{kind}/"))?;
     validate_no_symlink_components(collection, path)?;
     let document = knowledge::load_pack_element(path, kind)?;
     let issues = knowledge::validation_issues(&document);
@@ -436,7 +452,7 @@ fn validate_local_element(path: &Path, kind: &str) -> Result<String, String> {
     }
     path.strip_prefix(collection)
         .map(display)
-        .map_err(|_| format!("element is outside guru-maker/{kind}/"))
+        .map_err(|_| format!("element is outside gibo/{kind}/"))
 }
 
 fn validate_element_name(value: &str) -> Result<(), String> {

@@ -29,7 +29,7 @@ pub fn run(arguments: Vec<String>) -> Result<(), String> {
 fn graph_command(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "output"])?;
     if parsed.positionals.len() > 1 {
-        return Err("usage: gurumaker graph [workspace] [--output PATH] [--json]".into());
+        return Err("usage: gibo graph [workspace] [--output PATH] [--json]".into());
     }
     let root = PathBuf::from(
         parsed
@@ -92,7 +92,7 @@ fn knowledge_read(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace", "section"])?;
     let id = one_positional(
         &parsed,
-        "usage: gurumaker knowledge read <id> [--section NAME] [--workspace PATH] [--json]",
+        "usage: gibo knowledge read <id> [--section NAME] [--workspace PATH] [--json]",
     )?;
     let root = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let result = knowledge::read(&root, id, parsed.value("section"))?;
@@ -125,7 +125,7 @@ fn knowledge_list(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace", "kind"])?;
     no_positionals(
         &parsed,
-        "usage: gurumaker knowledge list [--kind KIND] [--workspace PATH] [--json]",
+        "usage: gibo knowledge list [--kind KIND] [--workspace PATH] [--json]",
     )?;
     let root = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let mut documents = knowledge::catalog_local(&root);
@@ -138,7 +138,7 @@ fn knowledge_list(arguments: &[String]) -> Result<(), String> {
     if parsed.json {
         emit(&documents, true, None)
     } else if documents.is_empty() {
-        println!("No Guru Maker knowledge records found.");
+        println!("No Gibo knowledge records found.");
         Ok(())
     } else {
         for document in documents {
@@ -157,7 +157,7 @@ fn knowledge_search(arguments: &[String]) -> Result<(), String> {
         &["json", "workspace", "kind", "entity", "limit", "candidates"],
         &["kind"],
     )?;
-    let query = one_positional(&parsed, "usage: gurumaker knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]")?;
+    let query = one_positional(&parsed, "usage: gibo knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]")?;
     let root = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let kinds = parsed.values("kind");
     let limit = parsed
@@ -181,7 +181,7 @@ fn knowledge_search(arguments: &[String]) -> Result<(), String> {
             return emit(&results, true, None);
         }
         if results.is_empty() {
-            println!("No matching Guru Maker knowledge records found.");
+            println!("No matching Gibo knowledge records found.");
             return Ok(());
         }
         for result in results {
@@ -202,7 +202,7 @@ fn knowledge_search(arguments: &[String]) -> Result<(), String> {
     if parsed.json {
         emit(&results, true, None)
     } else if results.is_empty() {
-        println!("No matching Guru Maker knowledge records found.");
+        println!("No matching Gibo knowledge records found.");
         Ok(())
     } else {
         for result in results {
@@ -234,7 +234,7 @@ fn knowledge_neighbors(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
     let id = one_positional(
         &parsed,
-        "usage: gurumaker knowledge neighbors <wiki-id> [--workspace PATH] [--json]",
+        "usage: gibo knowledge neighbors <wiki-id> [--workspace PATH] [--json]",
     )?;
     let result =
         knowledge::neighbors(&PathBuf::from(parsed.value("workspace").unwrap_or(".")), id)?;
@@ -259,7 +259,7 @@ fn knowledge_health(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace", "kind"])?;
     no_positionals(
         &parsed,
-        "usage: gurumaker knowledge health [--kind KIND] [--workspace PATH] [--json]",
+        "usage: gibo knowledge health [--kind KIND] [--workspace PATH] [--json]",
     )?;
     let result = knowledge::health(
         &PathBuf::from(parsed.value("workspace").unwrap_or(".")),
@@ -285,19 +285,16 @@ fn knowledge_check(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
     no_positionals(
         &parsed,
-        "usage: gurumaker knowledge check [--workspace PATH] [--json]",
+        "usage: gibo knowledge check [--workspace PATH] [--json]",
     )?;
     let result = knowledge::check(&PathBuf::from(parsed.value("workspace").unwrap_or(".")));
     if parsed.json {
         emit(&result, true, None)?;
     } else if result.valid {
-        println!("Valid Guru Maker knowledge: {} documents", result.documents);
+        println!("Valid Gibo knowledge: {} documents", result.documents);
     } else {
         for issue in &result.errors {
-            eprintln!(
-                "gurumaker: {}: {}: {}",
-                issue.path, issue.field, issue.message
-            );
+            eprintln!("gibo: {}: {}: {}", issue.path, issue.field, issue.message);
         }
     }
     if result.valid {
@@ -310,7 +307,7 @@ fn knowledge_check(arguments: &[String]) -> Result<(), String> {
 fn init(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json"])?;
     if parsed.positionals.len() > 1 {
-        return Err("usage: gurumaker init [workspace] [--json]".into());
+        return Err("usage: gibo init [workspace] [--json]".into());
     }
     let workspace = parsed
         .positionals
@@ -321,32 +318,32 @@ fn init(arguments: &[String]) -> Result<(), String> {
     emit(
         &result,
         parsed.json,
-        Some(format!("Initialized Guru Maker in {}", result.root)),
+        Some(format!("Initialized Gibo in {}", result.root)),
     )
 }
 
 fn mode(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
     if parsed.positionals.len() > 1 {
-        return Err("usage: gurumaker mode [auto|off] [--workspace PATH] [--json]".into());
+        return Err("usage: gibo mode [auto|off] [--workspace PATH] [--json]".into());
     }
     let root = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let result = if let Some(mode) = parsed.positionals.first() {
-        workspace::set_guru_mode(&root, mode)?
+        workspace::set_record_mode(&root, mode)?
     } else {
-        workspace::read_guru_mode(&root)?
+        workspace::read_record_mode(&root)?
     };
     emit(
         &result,
         parsed.json,
-        Some(format!("Guru Mode: {}", result.mode)),
+        Some(format!("Record Mode: {}", result.mode)),
     )
 }
 
 fn pack(arguments: &[String]) -> Result<(), String> {
     let (command, rest) = arguments
         .split_first()
-        .ok_or_else(|| "usage: gurumaker pack <command>".to_string())?;
+        .ok_or_else(|| "usage: gibo pack <command>".to_string())?;
     if matches!(command.as_str(), "--help" | "-h") {
         print_pack_help();
         return Ok(());
@@ -370,7 +367,7 @@ fn pack_install(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace", "ref"])?;
     let source = one_positional(
         &parsed,
-        "usage: gurumaker pack install <github-url> [--ref REF] [--workspace PATH] [--json]",
+        "usage: gibo pack install <github-url> [--ref REF] [--workspace PATH] [--json]",
     )?;
     let workspace = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     workspace::require_workspace(&workspace)?;
@@ -379,7 +376,7 @@ fn pack_install(arguments: &[String]) -> Result<(), String> {
         &info,
         parsed.json,
         Some(format!(
-            "Installed {} Pack from {source}; local memory was seeded in guru-maker/{}/",
+            "Installed {} Pack from {source}; local memory was seeded in gibo/{}/",
             info.manifest.kind, info.manifest.kind
         )),
     )
@@ -387,15 +384,12 @@ fn pack_install(arguments: &[String]) -> Result<(), String> {
 
 fn pack_list(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
-    no_positionals(
-        &parsed,
-        "usage: gurumaker pack list [--workspace PATH] [--json]",
-    )?;
+    no_positionals(&parsed, "usage: gibo pack list [--workspace PATH] [--json]")?;
     let installed = packs::list_packs(&PathBuf::from(parsed.value("workspace").unwrap_or(".")))?;
     if parsed.json {
         emit(&installed, true, None)
     } else if installed.is_empty() {
-        println!("No Guru Packs are installed in this project.");
+        println!("No Gibo Packs are installed in this project.");
         Ok(())
     } else {
         for info in installed {
@@ -420,7 +414,7 @@ fn pack_inspect(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
     let kind = one_positional(
         &parsed,
-        "usage: gurumaker pack inspect <wiki|lens|method> [--workspace PATH] [--json]",
+        "usage: gibo pack inspect <wiki|lens|method> [--workspace PATH] [--json]",
     )?;
     let workspace = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let info = packs::inspect_pack_slot(&workspace, kind)?;
@@ -440,7 +434,7 @@ fn pack_update(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace", "ref"])?;
     let kind = one_positional(
         &parsed,
-        "usage: gurumaker pack update <wiki|lens|method> [--ref REF] [--workspace PATH] [--json]",
+        "usage: gibo pack update <wiki|lens|method> [--ref REF] [--workspace PATH] [--json]",
     )?;
     let workspace = PathBuf::from(parsed.value("workspace").unwrap_or("."));
     let path = packs::pack_target(&workspace, kind)?;
@@ -470,7 +464,7 @@ fn pack_remove(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "workspace"])?;
     let kind = one_positional(
         &parsed,
-        "usage: gurumaker pack remove <wiki|lens|method> [--workspace PATH] [--json]",
+        "usage: gibo pack remove <wiki|lens|method> [--workspace PATH] [--json]",
     )?;
     let removed = packs::remove_pack(
         &PathBuf::from(parsed.value("workspace").unwrap_or(".")),
@@ -484,7 +478,7 @@ fn pack_remove(arguments: &[String]) -> Result<(), String> {
         &Removed { removed: &removed },
         parsed.json,
         Some(format!(
-            "Removed the {kind} Pack source; local guru-maker/{kind}/ memory was preserved."
+            "Removed the {kind} Pack source; local gibo/{kind}/ memory was preserved."
         )),
     )
 }
@@ -492,7 +486,7 @@ fn pack_remove(arguments: &[String]) -> Result<(), String> {
 fn pack_create(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json", "element"])?;
     if parsed.positionals.len() != 2 {
-        return Err("usage: gurumaker pack create <wiki|lens|method> <output-dir> --element PATH [--element PATH] [--json]".into());
+        return Err("usage: gibo pack create <wiki|lens|method> <output-dir> --element PATH [--element PATH] [--json]".into());
     }
     let kind = &parsed.positionals[0];
     let output = PathBuf::from(&parsed.positionals[1]);
@@ -522,16 +516,16 @@ fn pack_check(arguments: &[String]) -> Result<(), String> {
     let parsed = Options::parse(arguments, &["json"])?;
     let path = PathBuf::from(one_positional(
         &parsed,
-        "usage: gurumaker pack check <path> [--json]",
+        "usage: gibo pack check <path> [--json]",
     )?);
     let result = packs::check_pack(&path);
     if parsed.json {
         emit(&result, true, None)?;
     } else if result.valid {
-        println!("Valid Guru Pack: {}", result.path);
+        println!("Valid Gibo Pack: {}", result.path);
     } else {
         for error in &result.errors {
-            eprintln!("gurumaker: {error}");
+            eprintln!("gibo: {error}");
         }
     }
     if result.valid {
@@ -652,32 +646,32 @@ fn no_positionals(options: &Options, usage: &str) -> Result<(), String> {
 
 fn print_help() {
     println!(
-        "gurumaker {}\n\nUSAGE:\n    gurumaker init [workspace] [--json]\n    gurumaker mode [auto|off] [--workspace PATH] [--json]\n    gurumaker knowledge <list|search|read|check|neighbors|health> ...\n    gurumaker graph [workspace] [--output PATH] [--json]\n    gurumaker pack <install|list|inspect|update|remove|create|check> ...",
+        "gibo {}\n\nUSAGE:\n    gibo init [workspace] [--json]\n    gibo mode [auto|off] [--workspace PATH] [--json]\n    gibo knowledge <list|search|read|check|neighbors|health> ...\n    gibo graph [workspace] [--output PATH] [--json]\n    gibo pack <install|list|inspect|update|remove|create|check> ...",
         env!("CARGO_PKG_VERSION")
     );
 }
 
 fn print_pack_help() {
-    println!("Guru Pack commands: install, list, inspect, update, remove, create, check");
+    println!("Gibo Pack commands: install, list, inspect, update, remove, create, check");
 }
 
 fn print_pack_command_help(command: &str) -> Result<(), String> {
     let usage = match command {
         "install" => {
-            "gurumaker pack install <github-url> [--ref REF] [--workspace PATH] [--json]"
+            "gibo pack install <github-url> [--ref REF] [--workspace PATH] [--json]"
         }
-        "list" => "gurumaker pack list [--workspace PATH] [--json]",
+        "list" => "gibo pack list [--workspace PATH] [--json]",
         "inspect" => {
-            "gurumaker pack inspect <wiki|lens|method> [--workspace PATH] [--json]"
+            "gibo pack inspect <wiki|lens|method> [--workspace PATH] [--json]"
         }
         "update" => {
-            "gurumaker pack update <wiki|lens|method> [--ref REF] [--workspace PATH] [--json]"
+            "gibo pack update <wiki|lens|method> [--ref REF] [--workspace PATH] [--json]"
         }
         "remove" => {
-            "gurumaker pack remove <wiki|lens|method> [--workspace PATH] [--json]"
+            "gibo pack remove <wiki|lens|method> [--workspace PATH] [--json]"
         }
-        "create" => "gurumaker pack create <wiki|lens|method> <output-dir> --element PATH [--element PATH] [--json]",
-        "check" => "gurumaker pack check <path> [--json]",
+        "create" => "gibo pack create <wiki|lens|method> <output-dir> --element PATH [--element PATH] [--json]",
+        "check" => "gibo pack check <path> [--json]",
         other => return Err(format!("unknown pack command: {other}")),
     };
     println!("Usage:\n    {usage}");
@@ -686,6 +680,6 @@ fn print_pack_command_help(command: &str) -> Result<(), String> {
 
 fn print_knowledge_help() {
     println!(
-        "Knowledge commands:\n    gurumaker knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]\n    gurumaker knowledge read <id> [--section NAME] [--workspace PATH] [--json]\n    gurumaker knowledge list [--kind KIND] [--workspace PATH] [--json]\n    gurumaker knowledge check [--workspace PATH] [--json]\n    gurumaker knowledge neighbors <wiki-id> [--workspace PATH] [--json]\n    gurumaker knowledge health [--kind KIND] [--workspace PATH] [--json]"
+        "Knowledge commands:\n    gibo knowledge search <query> [--kind KIND]... [--entity ID] [--limit N] [--candidates] [--workspace PATH] [--json]\n    gibo knowledge read <id> [--section NAME] [--workspace PATH] [--json]\n    gibo knowledge list [--kind KIND] [--workspace PATH] [--json]\n    gibo knowledge check [--workspace PATH] [--json]\n    gibo knowledge neighbors <wiki-id> [--workspace PATH] [--json]\n    gibo knowledge health [--kind KIND] [--workspace PATH] [--json]"
     );
 }
