@@ -132,6 +132,8 @@ jobs:
           cp "$RAW_BINARY" "$ARCHIVE_DIR/gibo"
           cp README.md LICENSE NOTICE "$ARCHIVE_DIR/"
           tar -czf "${ARCHIVE_DIR}.tar.gz" "$ARCHIVE_DIR"
+          # The staging folder shares the gibo-* prefix with release assets.
+          rm -rf "$ARCHIVE_DIR"
 
       - name: Package Windows Runtime
         if: matrix.archive == 'zip'
@@ -152,15 +154,14 @@ jobs:
           Copy-Item README.md, LICENSE, NOTICE $archiveDirectory
           Compress-Archive -Path $archiveDirectory `
             -DestinationPath "$archiveDirectory.zip"
+          # The staging folder shares the gibo-* prefix with release assets.
+          Remove-Item -Recurse -Force $archiveDirectory
 
       - name: Upload build products
         uses: actions/upload-artifact@v7
         with:
           name: gibo-${{ needs.validate.outputs.version }}-${{ matrix.target }}
-          path: |
-            gibo-*
-            gibo-*.tar.gz
-            gibo-*.zip
+          path: gibo-*
           if-no-files-found: error
 
   publish:
@@ -186,8 +187,8 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum gibo-* gibo-*.tar.gz gibo-*.zip \
-            > SHA256SUMS
+          # gibo-* covers raw binaries and archives; listing archives again would duplicate them.
+          sha256sum gibo-* > SHA256SUMS
 
       - name: Prepare release notes
         env:
