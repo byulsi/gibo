@@ -7,7 +7,7 @@ workflow. A current document or dataset supplied by the user is external
 evidence for task routing even when it is stored inside the project. Reuse
 adequate project evidence before collecting more.
 
-Natural requests need not name Guru Maker, a public Skill, or a memory kind.
+Natural requests need not name Gibo, a public Skill, or a memory kind.
 Infer an obvious short or elliptical request from the immediate conversation,
 explicitly supplied artifacts, and targeted project memory. Ask only when
 remaining ambiguity would materially change the research question, output, or

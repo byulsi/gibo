@@ -1,9 +1,9 @@
 ---
-name: guru-train
+name: train
 description: Extract an explicit, user-requested investment lesson from a reviewed scenario, correction, or postmortem, then retain a reusable Lens, Wiki, or Method improvement. Require deliberate training or lesson-extraction intent; Guru Mode Auto and an ordinary natural-language research or review request never invoke this Skill implicitly. Do not use for ordinary recall or research, point-in-time Decisions or outcomes, Guru Pack lifecycle work, scoring, model fine-tuning, or background capture.
 ---
 
-# Guru Train
+# Gibo Train
 
 Run only a deliberate session the user requested. Work through the bounded
 scenario with the user, identify a reviewed lesson, and make only a

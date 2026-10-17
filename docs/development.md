@@ -56,61 +56,18 @@ results.
 
 ## Model-backed agent E2E
 
-The opt-in agent evaluation uses the 69-case matrix in `tests/e2e/cases.json`
-with a maintainer-selected Codex model. It is intentionally separate from
-`scripts/verify.sh` because it is slower, stochastic, and requires model
-access. The public matrix defines behavior and failure criteria, not a
-preferred model.
-
-Validate fixture construction without an agent call:
-
-```bash
-python3 scripts/e2e-agent-eval.py --prepare-only
-```
-
-Run the strict public matrix with a model available in your Codex environment:
-
-```bash
-python3 scripts/e2e-agent-eval.py \
-  --model YOUR_CODEX_MODEL \
-  --reasoning-effort high \
-  --jobs 1
-```
-
-You may instead set `GURU_MAKER_E2E_MODEL` and, optionally,
-`GURU_MAKER_E2E_REASONING_EFFORT`. Keep unpublished holdouts and reviewed
-result artifacts outside the repository so they remain independent and do not
-turn a stochastic baseline into a product contract.
-
-Strict isolation requires sequential execution. Each agent receives a fresh
-temporary workspace outside the checkout and a copied Runtime binary. The
-workspace and temporary `HOME`/XDG directories are removed before the next
-case starts. Only the existing `CODEX_HOME` authentication location is
-preserved. Non-system Skills found directly under that home are disabled by
-exact path, never by shared name, and any command that reads a `SKILL.md`
-outside the copied project-local Skill root fails the case. This prevents
-user-global or older installed Skills from satisfying a case in place of the
-worktree version without mutating the user's installation. Final text,
-commands, changed paths, and small text artifacts are retained in process
-memory and written to an external results directory only after all agents
-finish. Keep expected behavior and failure checks outside the agent workspace.
-
-Review the deterministic result together with the five qualitative dimensions
-in the matrix. A passing regex or file check does not excuse incorrect
-analysis, hidden execution, cross-project access, over-retention, or a
-case-specific rote workflow.
+Gibo removed Guru Maker's Codex-only agent evaluation harness
+(`scripts/e2e-agent-eval.py` and `tests/e2e/cases.json`). A Claude Code
+evaluation has not been written yet. The original 69-case matrix remains in
+the Git history as a starting point.
 
 ## Agent-oriented repository structure
 
 `AGENTS.md` is the primary contributor contract. The public plugin exposes
-only `skills/guru-{research,memory,decision,train,packs}/`. The separate
-`.agents/skills/guru-maker-development/` Skill is for agents maintaining this
-repository; it is excluded from the public plugin and must never be moved into
-`skills/`.
+only `skills/{research,memory,decision,train,packs}/`.
 
-Validate `.codex-plugin/plugin.json` with the Codex plugin validator, each
-public `skills/guru-{research,memory,decision,train,packs}/` directory with the
-skill validator, and the repository with:
+Validate each public skill directory with the skill validator and the
+repository with:
 
 ```bash
 claude plugin validate .

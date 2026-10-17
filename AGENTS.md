@@ -1,11 +1,13 @@
-# Guru Maker Repository Guide
+# Gibo Repository Guide
+
+Gibo is based on [Guru Maker](https://github.com/monarchjuno/guru-maker) and
+adapted for Claude Code. The original repository is the `upstream` remote.
 
 ## Product boundary
 
-Guru Maker is an investment memory layer shared by AI agent hosts.
-The first supported hosts are OpenAI Codex and Anthropic Claude Code. Host
+Gibo is an investment memory layer for Claude Code. Host
 agents own reasoning, research strategy, tool selection, delegation, file
-editing, and permissions. Guru Maker owns only the Markdown record contract,
+editing, and permissions. Gibo owns only the Markdown record contract,
 deterministic CLI operations, the project-local Guru Mode setting, GitHub-backed
 Guru Packs, and the derived Decision Graph, plus minimal native-edit guardrails
 around that state.
@@ -20,11 +22,8 @@ runtime.
 | Path | Owns |
 | --- | --- |
 | `src/` | The host-neutral Rust CLI and deterministic record, pack, and graph behavior. |
-| `skills/guru-{research,memory,decision,train,packs}/` | The five public Agent Skills and their concise trigger surfaces. |
+| `skills/{research,memory,decision,train,packs}/` | The five public Agent Skills and their concise trigger surfaces. |
 | `shared/gurumaker/` | Canonical shared Runtime bundle, wrappers, and progressively loaded references; never a public Skill. |
-| `.agents/skills/` | Repository-local development guidance for Codex; never shipped as a public Guru Maker Skill. |
-| `.codex-plugin/` | Codex discovery and presentation metadata only. |
-| `.agents/plugins/` | The public Codex marketplace entry only. |
 | `.claude-plugin/` | Claude Code discovery and marketplace metadata only. |
 | `hooks/` | Optional cross-host edit guardrails; the Rust Runtime owns their decisions. |
 | `.github/workflows/` | Cross-platform validation and tag-driven Runtime releases. |
@@ -73,8 +72,9 @@ triggers, job boundaries, permissions, build matrices, or release publication.
   `shared/gurumaker/runtime/version`.
 - Keep the wrappers thin. They may locate, download, verify, and launch the
   canonical Rust binary; they must not reimplement CLI behavior.
-- Keep Cargo, Codex plugin, Claude plugin, and pinned Runtime versions equal.
-  Product contract tests and the release workflow fail on a mismatch.
+- Keep Cargo and the pinned Runtime versions equal. Gibo still uses the
+  upstream Guru Maker Runtime release, so the Gibo plugin version is separate
+  from the Runtime version until Gibo ships its own Runtime.
 - Release raw target binaries and `SHA256SUMS` under an immutable `v<version>`
   GitHub tag. Install into versioned user-data paths without changing `PATH`.
 - A product update must not rewrite project memory or update Guru Packs.
@@ -120,18 +120,13 @@ worktree changes; do not restage, reformat, or revert files outside the task.
 Use `rg` for repository discovery and make the smallest change that keeps the
 Rust behavior, public Skills, and durable documentation aligned.
 
-Use the repository-local `guru-maker-development` Skill for maintenance work
-in Codex. It is intentionally under `.agents/skills/`, outside the plugin's
-`skills/` directory, so it helps contributors without becoming a sixth public
-Guru Maker Skill.
-
 Read the paired contract before changing these surfaces:
 
 | Change | Read and update with it |
 | --- | --- |
 | Record parsing, search, packs, graph, or hooks | `docs/knowledge-model.md`, `docs/decision-memory.md`, or `docs/hooks.md`, plus focused Rust tests. |
 | Public Skill trigger or shared reference | `README.md`, `installation.md`, `docs/architecture.md`, and `tests/product_contract.rs`. |
-| Runtime wrapper, version, target, or release asset | `docs/runtime-distribution.md`, `docs/ci-cd.md`, shared wrapper tests, and all four version owners. |
+| Runtime wrapper, version, target, or release asset | `docs/runtime-distribution.md`, `docs/ci-cd.md`, shared wrapper tests, `Cargo.toml`, and `shared/gurumaker/runtime/version`. |
 | CI job or validation command | `docs/ci-cd.md`, `docs/development.md`, and the matching local script. |
 
 Run `scripts/verify.sh` before handing off a material change. It runs the Rust
@@ -141,7 +136,7 @@ uses a maintainer's installed Runtime or project memory. Use
 `scripts/test-env.sh --keep` only when inspecting a failed fixture; it prints
 the temporary directory for manual cleanup.
 
-Validate both plugin manifests and run fresh Codex and Claude Code discovery
-smokes after consequential skill changes. Preserve unrelated worktree changes.
+Validate the plugin manifests with `claude plugin validate .` and run a fresh
+Claude Code discovery smoke after consequential skill changes. Preserve unrelated worktree changes.
 Do not commit, push, publish, or create a release unless the user explicitly
 asks.

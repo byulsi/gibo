@@ -1,9 +1,9 @@
 ---
-name: guru-research
-description: Apply Guru Maker's project-memory retrieval and retention contract to material natural-language investment or financial research in an initialized Guru Maker project, even when the user does not mention Guru Maker or saving and another research capability supplies the domain procedure. Host agents and specialized capabilities own research strategy, tool selection, and synthesis. Use explicitly outside an initialized project only when the user names Guru Research. Do not use for memory-only recall, supplied-source capture without refresh or analysis, a requested point-in-time Decision or outcome, deliberate lesson extraction, or Guru Pack lifecycle work.
+name: research
+description: Apply Gibo's project-memory retrieval and retention contract to material natural-language investment or financial research in an initialized Gibo project, even when the user does not mention Gibo or saving and another research capability supplies the domain procedure. Host agents and specialized capabilities own research strategy, tool selection, and synthesis. Use explicitly outside an initialized project only when the user names Gibo Research. Do not use for memory-only recall, supplied-source capture without refresh or analysis, a requested point-in-time Decision or outcome, deliberate lesson extraction, or Guru Pack lifecycle work.
 ---
 
-# Guru Research
+# Gibo Research
 
 Investigate the question with the host's chosen research tools and current
 sources. Keep project memory project-owned, inspectable, and subordinate to
@@ -12,7 +12,7 @@ external research evidence; its presence in the project does not make the task
 memory-only.
 
 Treat a matching natural-language request as sufficient invocation. Do not
-require the user to say research, Guru Maker, a Skill name, a record kind, or
+require the user to say research, Gibo, a Skill name, a record kind, or
 save. Resolve short or elliptical wording from the immediate task, explicitly
 supplied artifacts, and targeted project memory. Ask for clarification only
 when the unresolved ambiguity would materially change the research question,

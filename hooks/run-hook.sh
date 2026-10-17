@@ -5,7 +5,7 @@ event=${1:-}
 case "$event" in
     pre-tool-use | post-tool-use) ;;
     *)
-        printf 'Guru Maker hook error: unknown event: %s\n' "$event" >&2
+        printf 'Gibo hook error: unknown event: %s\n' "$event" >&2
         exit 1
         ;;
 esac
@@ -18,7 +18,7 @@ while :; do
         export GURUMAKER_HOOK_WORKSPACE
         plugin_root=${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}
         [ -n "$plugin_root" ] || {
-            printf 'Guru Maker hook error: plugin root is unavailable\n' >&2
+            printf 'Gibo hook error: plugin root is unavailable\n' >&2
             exit 1
         }
         exec sh "$plugin_root/shared/gurumaker/scripts/gurumaker.sh" \

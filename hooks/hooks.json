@@ -1,5 +1,5 @@
 {
-  "description": "Minimal Guru Maker memory guardrails for native file edits.",
+  "description": "Minimal Gibo memory guardrails for native file edits.",
   "hooks": {
     "PreToolUse": [
       {
@@ -24,7 +24,7 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.sh\" post-tool-use",
             "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\run-hook.ps1\" post-tool-use",
             "timeout": 60,
-            "statusMessage": "Validating Guru Maker memory"
+            "statusMessage": "Validating Gibo memory"
           }
         ]
       }

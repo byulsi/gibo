@@ -1,9 +1,9 @@
 ---
-name: guru-decision
-description: Synthesize a requested point-in-time investment judgment, record a Decision and explicit relationships, review an outcome, or render the Decision Graph. Use automatically for natural-language requests asking what investment alternative to choose, buy, sell, hold, allocate, or size, or explicitly revisiting a prior Decision, even when the user does not mention Guru Maker or a Skill; in Guru Mode Auto, a material judgment may be recorded without a separate save request. Use also for an Execution Brief after explicit action intent. Do not use for a research-only thesis update without an investment choice, general research, memory curation, explicit lesson extraction, or Guru Pack lifecycle work.
+name: decision
+description: Synthesize a requested point-in-time investment judgment, record a Decision and explicit relationships, review an outcome, or render the Decision Graph. Use automatically for natural-language requests asking what investment alternative to choose, buy, sell, hold, allocate, or size, or explicitly revisiting a prior Decision, even when the user does not mention Gibo or a Skill; in Guru Mode Auto, a material judgment may be recorded without a separate save request. Use also for an Execution Brief after explicit action intent. Do not use for a research-only thesis update without an investment choice, general research, memory curation, explicit lesson extraction, or Guru Pack lifecycle work.
 ---
 
-# Guru Decision
+# Gibo Decision
 
 Synthesize a material investment judgment and, when persistence is permitted,
 retain a point-in-time Decision with its evidence, assumptions, constraints,
@@ -11,7 +11,7 @@ risks, invalidation conditions, uncertainty, and authored relationships. The
 host owns reasoning, sources, tools, and permissions.
 
 Treat a matching natural-language request as sufficient invocation. Do not
-require the user to name Guru Maker, this Skill, a Decision, or a save command.
+require the user to name Gibo, this Skill, a Decision, or a save command.
 Resolve short or elliptical wording from the immediate task, supplied
 artifacts, and targeted project memory. Ask for clarification only when the
 unresolved ambiguity would materially change the judgment or requested action;

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Guru Memory"
-  short_description: "Automatically recall and curate memory"
-  default_prompt: "Use $guru-memory to naturally recall, correct, or curate this project memory, or explicitly change Guru Mode."

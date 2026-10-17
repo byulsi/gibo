@@ -1,13 +1,13 @@
 {
-  "name": "guru-maker",
-  "displayName": "Guru Maker",
-  "version": "0.0.4",
-  "description": "Five skills that automatically reuse and grow project-owned investment memory from matching natural-language tasks.",
+  "name": "gibo",
+  "displayName": "Gibo",
+  "version": "0.1.0",
+  "description": "Five skills that record, recall, and review project-owned investment memory, based on Guru Maker and adapted for Claude Code.",
   "author": {
-    "name": "monarchjuno"
+    "name": "byulsi"
   },
-  "repository": "https://github.com/monarchjuno/guru-maker",
+  "repository": "https://github.com/byulsi/gibo",
   "license": "Apache-2.0",
-  "keywords": ["investing", "investment-memory", "markdown", "guru-packs"],
+  "keywords": ["investing", "investment-memory", "decision-journal", "markdown", "korea"],
   "skills": "./skills/"
 }

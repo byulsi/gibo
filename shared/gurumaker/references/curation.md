@@ -1,6 +1,6 @@
 # In-task curation
 
-Guru Maker keeps project memory useful while an authorized task is already
+Gibo keeps project memory useful while an authorized task is already
 reading or writing it. Curation is host-owned semantic work around
 deterministic Runtime search, health, and validation. It is not a background
 process, a fixed agent workflow, or a reason to retain otherwise ineligible
@@ -12,7 +12,7 @@ change only the record explicitly requested by the user unless the user also
 requests broader curation. Neither mode authorizes initialization, Pack or Git
 operations, or external execution.
 
-In Auto, eligibility does not depend on the user saying Guru Maker, naming a
+In Auto, eligibility does not depend on the user saying Gibo, naming a
 Skill or memory kind, or asking to save. The host decides from the completed
 task. Retain a result only when it is independently understandable, is
 source-bound or sufficiently stable, is likely to change a later investment
@@ -71,7 +71,7 @@ When a short request has no resolvable referent and no supplied artifact, ask
 for the missing subject or material immediately. Do not search project memory,
 enumerate files, inspect mode or health, list records, render a graph, or infer
 a record kind merely to manufacture context. This early guard runs before any
-workspace inventory or Guru Maker command.
+workspace inventory or Gibo command.
 
 ## Bounded write sequence
 

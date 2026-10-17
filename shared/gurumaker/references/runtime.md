@@ -1,6 +1,6 @@
 # Runtime contract
 
-Guru Maker plugins expose five public Skills and one canonical shared bundle.
+The Gibo plugin exposes five public Skills and one canonical shared bundle.
 The shared bundle contains the pinned Runtime, wrappers, and references; it is
 not a user-facing Skill and does not run code during plugin installation.
 
@@ -18,7 +18,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File <public-skill-directory>\..\
 ```
 
 The wrapper accepts `--runtime-status` for a read-only check and
-`--runtime-install` for explicit setup. A normal Guru Maker command also
+`--runtime-install` for explicit setup. A normal Gibo command also
 installs the runtime on first use, subject to the host's native network and
 filesystem permissions.
 
@@ -42,5 +42,5 @@ binary under the user's data directory.
 
 An update never modifies project memory or Guru Pack source slots. A new plugin version
 selects a new versioned runtime directory on its next invocation. If setup
-fails, report the error and do not claim that Guru Maker memory was read or
+fails, report the error and do not claim that Gibo memory was read or
 changed.

@@ -1,6 +1,6 @@
 # Research capability composition
 
-Guru Research supplies the project-memory and retention contract alongside
+Gibo Research supplies the project-memory and retention contract alongside
 host-owned investment research; it is not a research router or a replacement
 for domain procedures. The host infers the evidence, data, method, and output
 the question requires, then inspects the research skills, tools, and data
@@ -19,7 +19,7 @@ Divide responsibilities clearly:
 
 - the specialized capability owns its domain procedure, such as filing
   retrieval, market-data access, transformation, calculation, or backtesting;
-- Guru Research contributes project-memory retrieval, stale-memory treatment,
+- Gibo Research contributes project-memory retrieval, stale-memory treatment,
   provenance and cutoff requirements for retained records, and mode-gated
   retention boundaries; and
 - the host agent owns question framing, research strategy, tool selection,

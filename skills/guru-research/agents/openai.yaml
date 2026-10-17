@@ -1,4 +1,0 @@
-interface:
-  display_name: "Guru Research"
-  short_description: "Research and retain durable evidence"
-  default_prompt: "Use $guru-research to naturally investigate this question with current evidence, relevant project memory, and suitable available research capabilities."

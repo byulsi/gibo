@@ -21,7 +21,7 @@ while ($true) {
             $env:PLUGIN_ROOT
         }
         if (-not $pluginRoot) {
-            throw "Guru Maker hook error: plugin root is unavailable"
+            throw "Gibo hook error: plugin root is unavailable"
         }
         $wrapper = Join-Path $pluginRoot "shared/gurumaker/scripts/gurumaker.ps1"
         & $wrapper hook $Event

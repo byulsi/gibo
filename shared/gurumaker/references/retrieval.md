@@ -182,7 +182,7 @@ local memory changes.
 Primary-agent selection is the default. A host evaluating delegation may ask a
 lightweight subagent to rerank at most six candidate cards only when all top
 matches are `partial`, two or more cards are meaningfully ambiguous, and the
-task is material. The host owns this evaluation; Guru Maker does not provide a
+task is material. The host owns this evaluation; Gibo does not provide a
 fixed router or manager.
 
 Give the subagent only the user intent and compact cards, with no record body,

@@ -1,8 +1,8 @@
 # Guru Mode
 
 Guru Mode controls whether a host agent may improve local project memory during
-an ordinary user-invoked investment task matched by a public Guru Maker Skill,
-including a natural-language task that never names Guru Maker. It does not
+an ordinary user-invoked investment task matched by a public Gibo Skill,
+including a natural-language task that never names Gibo. It does not
 change research quality, read-only retrieval, native host permissions, or the
 explicit boundaries for Guru Packs, Git, external execution, and project
 initialization.
@@ -48,7 +48,7 @@ again. Eligible changes include:
 - a stable correction independently established by the completed work and
   eligible under the normal Wiki, Lens, or Method gates.
 
-The user does not need to mention Guru Maker, invoke a Skill, name a memory
+The user does not need to mention Gibo, invoke a Skill, name a memory
 kind, or ask to save. A matching public Skill should be selected from the
 natural request, use relevant project memory when it can materially improve
 the task, and apply the durability and kind-selection rules in

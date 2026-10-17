@@ -1,4 +1,0 @@
-interface:
-  display_name: "Guru Decision"
-  short_description: "Automatically preserve material judgments"
-  default_prompt: "Use $guru-decision to naturally synthesize and, when permitted, record this investment decision."

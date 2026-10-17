@@ -1,5 +1,5 @@
 ---
-name: guru-packs
+name: packs
 description: Install, list, inspect, update, remove, create, check, or share a GitHub-backed Wiki, Lens, or Method Pack. Use only for an explicit Pack lifecycle or publishing request; Guru Mode Auto and an ordinary natural-language investment request never invoke Pack work implicitly. Do not use for research, local memory curation, Decisions, or lesson extraction.
 ---
 

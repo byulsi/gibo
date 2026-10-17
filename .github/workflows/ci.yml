@@ -43,15 +43,12 @@ jobs:
 
       - name: Check plugin metadata
         run: |
-          python3 -m json.tool .codex-plugin/plugin.json >/dev/null
-          python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
           python3 -m json.tool .claude-plugin/plugin.json >/dev/null
           python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
           python3 -m json.tool hooks/hooks.json >/dev/null
           test -d shared/gurumaker
-          for skill in guru-research guru-memory guru-decision guru-train guru-packs; do
+          for skill in research memory decision train packs; do
             test -f "skills/$skill/SKILL.md"
-            test -f "skills/$skill/agents/openai.yaml"
             test "$(sed -n '2p' "skills/$skill/SKILL.md")" = "name: $skill"
           done
           test "$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d '[:space:]')" = 5

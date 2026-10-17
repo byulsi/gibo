@@ -37,17 +37,9 @@ jobs:
           RUNTIME_VERSION="$(
             tr -d '[:space:]' < shared/gurumaker/runtime/version
           )"
-          CODEX_VERSION="$(
-            python3 -c 'import json; print(json.load(open(".codex-plugin/plugin.json"))["version"])'
-          )"
-          CLAUDE_VERSION="$(
-            python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])'
-          )"
           test -n "$CONFIGURED_VERSION"
           test "$GITHUB_REF_NAME" = "v${CONFIGURED_VERSION}"
           test "$RUNTIME_VERSION" = "$CONFIGURED_VERSION"
-          test "$CODEX_VERSION" = "$CONFIGURED_VERSION"
-          test "$CLAUDE_VERSION" = "$CONFIGURED_VERSION"
           echo "version=$CONFIGURED_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Validate source
@@ -57,9 +49,8 @@ jobs:
           cargo test --all-targets --locked
           python3 -m json.tool hooks/hooks.json >/dev/null
           test -d shared/gurumaker
-          for skill in guru-research guru-memory guru-decision guru-train guru-packs; do
+          for skill in research memory decision train packs; do
             test -f "skills/$skill/SKILL.md"
-            test -f "skills/$skill/agents/openai.yaml"
           done
           test "$(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d '[:space:]')" = 5
           sh -n shared/gurumaker/scripts/gurumaker.sh

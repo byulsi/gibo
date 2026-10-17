@@ -1,16 +1,16 @@
 ---
-name: guru-memory
-description: Recall or maintain project-owned Wiki, Lens, Evidence, and Method memory, initialize a workspace, or inspect and explicitly change Guru Mode. Use automatically in an initialized Guru Maker project when a natural-language investment request can materially benefit from existing local memory or produces eligible stable knowledge, even if the user does not mention Guru Maker, a Skill, or saving. Use also for a short follow-up that clearly refers to saved investment memory but omits its subject, so the missing referent is requested before searching. Use when no external refresh, analysis of supplied point-in-time external evidence or data, or point-in-time judgment is requested; an explicit request to retain a supplied source is still memory work. Do not use for research, Decisions or outcomes, deliberate lesson extraction, or Guru Pack lifecycle work.
+name: memory
+description: Recall or maintain project-owned Wiki, Lens, Evidence, and Method memory, initialize a workspace, or inspect and explicitly change Guru Mode. Use automatically in an initialized Gibo project when a natural-language investment request can materially benefit from existing local memory or produces eligible stable knowledge, even if the user does not mention Gibo, a Skill, or saving. Use also for a short follow-up that clearly refers to saved investment memory but omits its subject, so the missing referent is requested before searching. Use when no external refresh, analysis of supplied point-in-time external evidence or data, or point-in-time judgment is requested; an explicit request to retain a supplied source is still memory work. Do not use for research, Decisions or outcomes, deliberate lesson extraction, or Guru Pack lifecycle work.
 ---
 
-# Guru Memory
+# Gibo Memory
 
 Maintain project-owned investment memory as ordinary Markdown under
 `guru-maker/`. Do not create a workspace for a read-only request; initialize
 it only when the user asks to retain memory or install a Guru Pack.
 
 Treat a matching natural-language request as sufficient invocation. Do not
-require the user to name Guru Maker, this Skill, a record kind, or a save
+require the user to name Gibo, this Skill, a record kind, or a save
 command. In an initialized project, use relevant memory when it can materially
 improve the answer. A short or elliptical request may be resolved from the
 immediate task, explicitly supplied artifacts, and targeted project-memory
