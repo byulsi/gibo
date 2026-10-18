@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "openbb": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/openbb.sh"]
+    },
+    "dart": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dart.sh"],
+      "env": {
+        "DART_API_KEY": "${user_config.dart_api_key}"
+      }
+    },
+    "krx": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/krx.sh"],
+      "env": {
+        "KRX_ID": "${user_config.krx_id}",
+        "KRX_PW": "${user_config.krx_password}"
+      }
+    }
+  }
+}

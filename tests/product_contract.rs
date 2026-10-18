@@ -843,3 +843,51 @@ fn repository_contains_only_the_thin_product() {
         assert!(!skills.contains(forbidden), "skills retain {forbidden}");
     }
 }
+
+#[test]
+fn data_connections_are_pinned_read_only_and_keep_secrets_out() {
+    let mcp = json(".mcp.json");
+    let servers = mcp["mcpServers"].as_object().unwrap();
+    let mut names = servers.keys().cloned().collect::<Vec<_>>();
+    names.sort();
+    assert_eq!(names, ["dart", "krx", "openbb"]);
+
+    for (name, server) in servers {
+        assert_eq!(server["command"], "sh", "{name} must start through sh");
+        let launcher = server["args"][0].as_str().unwrap();
+        let relative = launcher
+            .strip_prefix("${CLAUDE_PLUGIN_ROOT}/")
+            .unwrap_or_else(|| panic!("{name} launcher must live in the plugin"));
+        assert!(root().join(relative).is_file(), "{name} launcher missing");
+        for (key, value) in server
+            .get("env")
+            .and_then(Value::as_object)
+            .into_iter()
+            .flatten()
+        {
+            let value = value.as_str().unwrap();
+            assert!(
+                value.starts_with("${user_config.") && value.ends_with('}'),
+                "{name} {key} must come from userConfig, not a literal"
+            );
+        }
+    }
+
+    let plugin = json(".claude-plugin/plugin.json");
+    let options = plugin["userConfig"].as_object().unwrap();
+    assert_eq!(options["dart_api_key"]["sensitive"], true);
+    assert_eq!(options["krx_password"]["sensitive"], true);
+
+    let setup = normalized("mcp/setup.sh");
+    for pinned in [
+        "openbb-mcp-server==2.0.1",
+        "openbb==5.0.0",
+        "korean-dart-mcp@0.10.1",
+        "pykrx==1.2.9",
+        "pykrx-mcp@47b92e547f703186b7f9e8c938599ef92fe71cc3",
+        "\"mcp<2\"",
+    ] {
+        assert!(setup.contains(pinned), "setup.sh must pin {pinned}");
+    }
+    assert!(normalized("mcp/openbb.sh").contains("mcp-legacy-proxy.py"));
+}

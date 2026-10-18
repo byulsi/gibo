@@ -1,13 +1,32 @@
 {
   "name": "gibo",
   "displayName": "Gibo",
-  "version": "0.1.0",
-  "description": "Five skills that record, recall, and review project-owned investment memory, based on Guru Maker and adapted for Claude Code.",
+  "version": "0.2.0",
+  "description": "Five skills that record, recall, and review project-owned investment memory, with OpenBB, OpenDART, and KRX data connections. Based on Guru Maker and adapted for Claude Code.",
   "author": {
     "name": "byulsi"
   },
   "repository": "https://github.com/byulsi/gibo",
   "license": "Apache-2.0",
-  "keywords": ["investing", "investment-memory", "decision-journal", "markdown", "korea"],
-  "skills": "./skills/"
+  "keywords": ["investing", "investment-memory", "decision-journal", "markdown", "korea", "opendart", "krx", "openbb"],
+  "skills": "./skills/",
+  "userConfig": {
+    "dart_api_key": {
+      "type": "string",
+      "title": "OpenDART API key",
+      "description": "40-character key from opendart.fss.or.kr for the dart connection. Leave empty to use the macOS Keychain item opendart-api-key.",
+      "sensitive": true
+    },
+    "krx_id": {
+      "type": "string",
+      "title": "KRX Data Marketplace ID",
+      "description": "ID of an ID/password account on data.krx.co.kr (Kakao/Naver sign-in accounts do not work) for the krx connection. Leave empty to use the macOS Keychain item krx-data-login."
+    },
+    "krx_password": {
+      "type": "string",
+      "title": "KRX Data Marketplace password",
+      "description": "Password for the KRX ID above.",
+      "sensitive": true
+    }
+  }
 }

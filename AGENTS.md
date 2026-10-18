@@ -12,10 +12,17 @@ deterministic CLI operations, the project-local Record Mode setting, GitHub-back
 Gibo Packs, and the derived Decision Graph, plus minimal native-edit guardrails
 around that state.
 
+Gibo also ships launchers for three third-party, read-only data MCP servers
+(OpenBB, OpenDART through korean-dart-mcp, and KRX through pykrx-mcp) so
+research can cite primary sources. Gibo does not implement an MCP server of
+its own; the launchers only locate a pinned installation, read credentials,
+and start the server. Credentials come from `userConfig`, environment
+variables, or the macOS Keychain and never live in the repository.
+
 Do not add a fixed Head Manager, Portfolio Manager, Risk Manager, agent router,
 workflow engine, permission system, OMS, broker adapter, Django service,
-database, first-party MCP server, web viewer, background process, or Node
-runtime.
+database, first-party MCP server, web viewer, background process, order or
+account access, or a Node runtime inside the Gibo Runtime.
 
 ## Canonical ownership
 
@@ -24,7 +31,8 @@ runtime.
 | `src/` | The host-neutral Rust CLI and deterministic record, pack, and graph behavior. |
 | `skills/{research,memory,decision,train,packs}/` | The five public Agent Skills and their concise trigger surfaces. |
 | `shared/gibo/` | Canonical shared Runtime bundle, wrappers, and progressively loaded references; never a public Skill. |
-| `.claude-plugin/` | Claude Code discovery and marketplace metadata only. |
+| `.claude-plugin/` | Claude Code discovery and marketplace metadata, plus `userConfig` for data-server credentials. |
+| `.mcp.json`, `mcp/` | Data-server registrations, their launchers, the pinned `setup.sh` installer, and the legacy-handshake relay. |
 | `hooks/` | Optional cross-host edit guardrails; the Rust Runtime owns their decisions. |
 | `.github/workflows/` | Cross-platform validation and tag-driven Runtime releases. |
 | `tests/` | Rust integration, cross-project isolation, and product contract tests. |

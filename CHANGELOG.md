@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 - 2026-10-18
+
+- Bundle three read-only data connections in `.mcp.json`: `openbb` (OpenBB
+  Platform: U.S. and global prices, macro data, technical calculations),
+  `dart` (korean-dart-mcp 0.10.1: OpenDART disclosures, financials, and
+  shareholdings), and `krx` (pykrx-mcp at a pinned commit with pykrx 1.2.9:
+  KRX investor flows, short selling, indices, and prices).
+- Ask for the OpenDART key and KRX login through plugin `userConfig`, stored in
+  the system credential store; fall back to environment variables and the
+  macOS Keychain.
+- Add `mcp/setup.sh` to install the pinned servers into the plugin data folder,
+  including a better-sqlite3 override so korean-dart-mcp builds on Node 26.
+- Run OpenBB through a relay that hides the 2026-07-28 discovery probe, which
+  FastMCP 4 servers reject when Claude Code 2.1.274 sends it alongside the
+  initialize handshake. Pin pykrx-mcp to MCP 1.x for the same reason.
+
 ## 0.1.0 - 2026-10-17
 
 First Gibo release, based on Guru Maker 0.0.4 and its unreleased changes.
