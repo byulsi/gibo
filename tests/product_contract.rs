@@ -881,13 +881,28 @@ fn data_connections_are_pinned_read_only_and_keep_secrets_out() {
     let setup = normalized("mcp/setup.sh");
     for pinned in [
         "openbb-mcp-server==2.0.1",
-        "openbb==5.0.0",
+        "openbb-core[pandas]==2.0.1",
+        "openbb-yfinance==2.0.0",
         "korean-dart-mcp@0.10.1",
+        "--omit=optional",
         "pykrx==1.2.9",
         "pykrx-mcp@47b92e547f703186b7f9e8c938599ef92fe71cc3",
         "\"mcp<2\"",
     ] {
         assert!(setup.contains(pinned), "setup.sh must pin {pinned}");
     }
-    assert!(normalized("mcp/openbb.sh").contains("mcp-legacy-proxy.py"));
+    for name in ["openbb", "dart", "krx"] {
+        let launcher = normalized(&format!("mcp/{name}.sh"));
+        assert!(
+            launcher.contains(&format!("relay.py\" --name {name}")),
+            "{name} must run through the Gibo relay"
+        );
+    }
+    assert!(normalized("mcp/openbb.sh").contains("--lazy"));
+    for helper in ["relay_dart.py", "relay_krx.py", "dart-markdown.mjs"] {
+        assert!(
+            root().join("mcp").join(helper).is_file(),
+            "{helper} missing"
+        );
+    }
 }

@@ -24,4 +24,5 @@ done
 [ -n "$server" ] || gibo_need_setup "korean-dart-mcp is not installed"
 command -v node >/dev/null 2>&1 || gibo_fail "Node.js 20.19 or later is required"
 
-exec node "$server"
+export GIBO_DART_CONVERTER="${server%/index.js}/lib/dart-xml.js"
+exec python3 -I "$GIBO_MCP_DIR/relay.py" --name dart -- node "$server"

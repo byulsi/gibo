@@ -15,9 +15,13 @@ around that state.
 Gibo also ships launchers for three third-party, read-only data MCP servers
 (OpenBB, OpenDART through korean-dart-mcp, and KRX through pykrx-mcp) so
 research can cite primary sources. Gibo does not implement an MCP server of
-its own; the launchers only locate a pinned installation, read credentials,
-and start the server. Credentials come from `userConfig`, environment
-variables, or the macOS Keychain and never live in the repository.
+its own; the launchers locate a pinned installation, read credentials, and
+start the server behind `mcp/relay.py`. The relay may only keep oversized
+responses out of the conversation, add a few read-only helpers computed from
+the wrapped server's own data (`save_report`, `technical_indicators`), append
+usage notes, and defer a heavy server's start until its first tool call.
+Credentials come from `userConfig`, environment variables, or the macOS
+Keychain and never live in the repository.
 
 Do not add a fixed Head Manager, Portfolio Manager, Risk Manager, agent router,
 workflow engine, permission system, OMS, broker adapter, Django service,
@@ -32,7 +36,7 @@ account access, or a Node runtime inside the Gibo Runtime.
 | `skills/{research,memory,decision,train,packs}/` | The five public Agent Skills and their concise trigger surfaces. |
 | `shared/gibo/` | Canonical shared Runtime bundle, wrappers, and progressively loaded references; never a public Skill. |
 | `.claude-plugin/` | Claude Code discovery and marketplace metadata, plus `userConfig` for data-server credentials. |
-| `.mcp.json`, `mcp/` | Data-server registrations, their launchers, the pinned `setup.sh` installer, and the legacy-handshake relay. |
+| `.mcp.json`, `mcp/` | Data-server registrations, their launchers, the pinned `setup.sh` installer, and the relay. |
 | `hooks/` | Optional cross-host edit guardrails; the Rust Runtime owns their decisions. |
 | `.github/workflows/` | Cross-platform validation and tag-driven Runtime releases. |
 | `tests/` | Rust integration, cross-project isolation, and product contract tests. |

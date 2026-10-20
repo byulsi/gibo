@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.2.0 - 2026-10-18
+## 0.2.0 - 2026-10-19
 
 - Bundle three read-only data connections in `.mcp.json`: `openbb` (OpenBB
-  Platform: U.S. and global prices, macro data, technical calculations),
+  Platform: U.S. and global prices, macro data),
   `dart` (korean-dart-mcp 0.10.1: OpenDART disclosures, financials, and
   shareholdings), and `krx` (pykrx-mcp at a pinned commit with pykrx 1.2.9:
   KRX investor flows, short selling, indices, and prices).
@@ -12,9 +12,28 @@
   macOS Keychain.
 - Add `mcp/setup.sh` to install the pinned servers into the plugin data folder,
   including a better-sqlite3 override so korean-dart-mcp builds on Node 26.
-- Run OpenBB through a relay that hides the 2026-07-28 discovery probe, which
-  FastMCP 4 servers reject when Claude Code 2.1.274 sends it alongside the
-  initialize handshake. Pin pykrx-mcp to MCP 1.x for the same reason.
+- Run all three servers through `mcp/relay.py`, which:
+  - saves a tool response above ~20,000 estimated tokens to the project's
+    `자료/응답/` folder and returns a summary with the path
+    (`GIBO_SPILL_TOKENS`, `GIBO_FILES_DIR`);
+  - adds `save_report` to `dart`: the full filing as Markdown in
+    `자료/사업보고서/`, with headings and line numbers in the reply. It unwraps
+    `<LIBRARY>` before korean-dart-mcp's converter, which otherwise drops
+    "II. 사업의 내용" and the financial statement notes;
+  - adds `technical_indicators` to `krx`, computed from KRX daily prices so the
+    series never enters the conversation;
+  - appends usage notes to each server's instructions (KRX and DART first for
+    Korean data, avoid `get_attachments`);
+  - starts OpenBB on its first tool call, answering the handshake and tool list
+    from a cache; and
+  - hides the 2026-07-28 discovery probe, which FastMCP 4 servers reject when
+    Claude Code 2.1.274 sends it alongside the initialize handshake. pykrx-mcp
+    is pinned to MCP 1.x for the same reason.
+- Install only the parts in use (~0.75 GB instead of ~1.6 GB): OpenBB data
+  extensions without the meta package, CLI, devtools, technical, and charting
+  extensions; korean-dart-mcp with `--omit=optional`.
+- Add `scripts/check-connectors.py`, a nine-step scenario check of the data
+  connections, and the October 2026 connector measurement report.
 
 ## 0.1.0 - 2026-10-17
 

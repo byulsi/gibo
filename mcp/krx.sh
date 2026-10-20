@@ -24,4 +24,4 @@ fi
 
 mkdir -p "$GIBO_DATA/matplotlib"
 export MPLCONFIGDIR="$GIBO_DATA/matplotlib"
-exec "$server"
+exec python3 -I "$GIBO_MCP_DIR/relay.py" --name krx -- "$server"
